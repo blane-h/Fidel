@@ -1,0 +1,227 @@
+:root {
+  --bg: #ffffff;
+  --primary: #111111;
+  --primary-soft: #efefef;
+  --text: #101010;
+  --muted: #666666;
+  --success: #1e9e57;
+  --danger: #cf2249;
+  --key: #adaeb0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem 0.75rem;
+  position: relative;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.logo {
+  position: absolute;
+  left: 1rem;
+  top: 0.55rem;
+  border: 1px solid #bdbdbd;
+  padding: 0.35rem 0.5rem;
+  border-radius: 2px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.top-nav nav {
+  display: flex;
+  gap: 4.8rem;
+}
+
+.top-nav a {
+  text-decoration: none;
+  color: #1a1a1a;
+  font-size: 2.8rem;
+  font-weight: 400;
+  padding: 0;
+  line-height: 1;
+}
+
+.top-nav a.active {
+  color: #151515;
+}
+
+.spell-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.15rem 0 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.prompt-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.icon-btn {
+  border: none;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  font-size: 2rem;
+  padding: 0;
+}
+
+.answer-slots {
+  display: flex;
+  justify-content: center;
+  gap: 1.45rem;
+  min-height: 7rem;
+  margin-top: 0.8rem;
+}
+
+.slot {
+  width: 6.2rem;
+  min-height: 7rem;
+  border-bottom: 1px solid #545454;
+  text-align: center;
+  font-size: 7rem;
+  line-height: 0.95;
+}
+
+.status {
+  text-align: center;
+  min-height: 1.2rem;
+  margin: 0.3rem 0 0.55rem;
+  font-weight: 600;
+}
+
+.status.success {
+  color: var(--success);
+}
+
+.status.error {
+  color: var(--danger);
+}
+
+.keyboard-section {
+  width: 100%;
+  background: #f8f8f8;
+  padding: 1.3rem 1.5rem 0.95rem;
+}
+
+.consonant-grid {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(42px, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.consonant-btn,
+.vowel-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
+  background: var(--key);
+  color: #1c1c1c;
+  font-size: 2rem;
+  font-weight: 500;
+  min-height: 3rem;
+}
+
+.consonant-btn.active {
+  background: #7f8084;
+  color: white;
+}
+
+.vowel-section {
+  padding: 0 1.5rem 1rem;
+}
+
+.vowel-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(42px, 1fr));
+  gap: 0.75rem;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-bottom: 0.7rem;
+}
+
+.small-btn {
+  border: none;
+  cursor: pointer;
+  background: #efefef;
+  color: #333;
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .top-nav {
+    padding: 1rem 0.75rem 0.8rem;
+  }
+
+  .top-nav nav {
+    gap: 2rem;
+  }
+
+  .top-nav a {
+    font-size: 1.9rem;
+  }
+
+  .logo {
+    top: 0.7rem;
+    left: 0.45rem;
+    padding: 0.28rem 0.45rem;
+    font-size: 0.9rem;
+  }
+
+  h2 {
+    font-size: 2.2rem;
+  }
+
+  .slot {
+    width: 4.5rem;
+    min-height: 5.2rem;
+    font-size: 5rem;
+  }
+
+  .keyboard-section {
+    padding: 1rem 0.8rem;
+  }
+
+  .consonant-grid {
+    grid-template-columns: repeat(6, minmax(42px, 1fr));
+    gap: 0.6rem;
+  }
+
+  .vowel-section {
+    padding: 0 0.8rem 0.8rem;
+  }
+
+  .vowel-row {
+    grid-template-columns: repeat(4, minmax(42px, 1fr));
+  }
+}

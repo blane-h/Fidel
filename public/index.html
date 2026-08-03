@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fidel Spell</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="top-nav">
+      <div class="logo" aria-label="Fidel logo">ፊደል</div>
+      <nav>
+        <a href="#">Study</a>
+        <a class="active" href="#">Spell</a>
+        <a href="#">Draw</a>
+      </nav>
+    </header>
+
+    <main class="spell-page">
+      <section class="prompt-area">
+        <h2 id="latinPrompt">fidel</h2>
+        <button id="soundBtn" class="icon-btn" aria-label="Play pronunciation">🔊</button>
+      </section>
+      <section class="answer-area">
+        <div id="answerSlots" class="answer-slots"></div>
+        <p id="statusMessage" class="status"></p>
+      </section>
+      <section class="keyboard-section">
+        <div id="consonantGrid" class="consonant-grid"></div>
+      </section>
+      <section class="vowel-section" id="vowelCard" hidden>
+        <div id="vowelRow" class="vowel-row"></div>
+      </section>
+      <section class="footer-actions">
+        <button id="clearBtn" class="small-btn">Clear</button>
+        <button id="newWordBtn" class="small-btn">New Word</button>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
