@@ -2,9 +2,13 @@ const consonantGrid = document.getElementById('consonantGrid');
 const vowelCard = document.getElementById('vowelCard');
 const vowelRow = document.getElementById('vowelRow');
 const latinPrompt = document.getElementById('latinPrompt');
+const translationText = document.getElementById('translationText');
 const answerSlots = document.getElementById('answerSlots');
 const statusMessage = document.getElementById('statusMessage');
+const translateBtn = document.getElementById('translateBtn');
 const soundBtn = document.getElementById('soundBtn');
+const backspaceBtn = document.getElementById('backspaceBtn');
+const enterBtn = document.getElementById('enterBtn');
 const clearBtn = document.getElementById('clearBtn');
 const newWordBtn = document.getElementById('newWordBtn');
 
@@ -12,6 +16,8 @@ let alphabet = [];
 let selectedFamilyIndex = null;
 let currentWord = null;
 let answer = [];
+let currentAudio = null;
+let translationVisible = false;
 
 function renderSlots() {
   answerSlots.innerHTML = '';
@@ -57,6 +63,31 @@ function addCharacter(char) {
   evaluateAnswer();
 }
 
+function removeCharacter() {
+  if (!currentWord || answer.length === 0) {
+    return;
+  }
+
+  answer.pop();
+  renderSlots();
+  statusMessage.textContent = '';
+  statusMessage.className = 'status';
+}
+
+function submitAnswer() {
+  if (!currentWord) {
+    return;
+  }
+
+  if (answer.length < currentWord.amharic.length) {
+    statusMessage.textContent = 'Keep going.';
+    statusMessage.className = 'status';
+    return;
+  }
+
+  evaluateAnswer();
+}
+
 function renderVowels(index) {
   selectedFamilyIndex = index;
   vowelRow.innerHTML = '';
@@ -96,11 +127,40 @@ async function loadWord() {
   const word = await response.json();
   currentWord = word;
   answer = [];
+  translationVisible = false;
   latinPrompt.textContent = word.latin;
+  translationText.textContent = word.translation || '';
+  translationText.hidden = true;
+  translateBtn.setAttribute('aria-pressed', 'false');
   statusMessage.textContent = '';
   statusMessage.className = 'status';
   renderSlots();
+
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio.src = '';
+    currentAudio.load();
+  }
+
+  currentAudio = null;
+
+  if (word?.id) {
+    currentAudio = new Audio(`/api/words/${word.id}/audio`);
+    currentAudio.preload = 'auto';
+    currentAudio.load();
+  }
 }
+
+translateBtn.addEventListener('click', () => {
+  if (!currentWord || !currentWord.translation) {
+    return;
+  }
+
+  translationVisible = !translationVisible;
+  translationText.hidden = !translationVisible;
+  translateBtn.setAttribute('aria-pressed', String(translationVisible));
+});
 
 async function init() {
   const response = await fetch('/api/alphabet');
@@ -110,15 +170,25 @@ async function init() {
   await loadWord();
 }
 
-soundBtn.addEventListener('click', () => {
-  if (!currentWord?.amharic || !window.speechSynthesis) {
+soundBtn.addEventListener('click', async () => {
+  if (!currentWord?.id) {
     return;
   }
 
-  const utterance = new SpeechSynthesisUtterance(currentWord.amharic);
-  utterance.lang = 'am-ET';
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  try {
+    if (currentAudio) {
+      currentAudio.currentTime = 0;
+      await currentAudio.play();
+      return;
+    }
+  } catch (_error) {
+    if (window.speechSynthesis && currentWord?.amharic) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentWord.amharic);
+      utterance.lang = 'am-ET';
+      window.speechSynthesis.speak(utterance);
+    }
+  }
 });
 
 clearBtn.addEventListener('click', () => {
@@ -127,6 +197,10 @@ clearBtn.addEventListener('click', () => {
   statusMessage.textContent = '';
   statusMessage.className = 'status';
 });
+
+backspaceBtn.addEventListener('click', removeCharacter);
+
+enterBtn.addEventListener('click', submitAnswer);
 
 newWordBtn.addEventListener('click', loadWord);
 

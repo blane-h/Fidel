@@ -18,7 +18,11 @@
 
     <main class="spell-page">
       <section class="prompt-area">
-        <h2 id="latinPrompt">fidel</h2>
+        <button id="translateBtn" class="icon-btn translate-btn" aria-label="Show translation">🌐</button>
+        <div class="prompt-copy">
+          <h2 id="latinPrompt">fidel</h2>
+          <p id="translationText" class="translation-text" hidden></p>
+        </div>
         <button id="soundBtn" class="icon-btn" aria-label="Play pronunciation">🔊</button>
       </section>
       <section class="answer-area">
@@ -30,6 +34,10 @@
       </section>
       <section class="vowel-section" id="vowelCard" hidden>
         <div id="vowelRow" class="vowel-row"></div>
+        <div class="keyboard-actions">
+          <button id="backspaceBtn" class="action-btn" type="button" aria-label="Backspace">⌫</button>
+          <button id="enterBtn" class="action-btn" type="button" aria-label="Enter">↩</button>
+        </div>
       </section>
       <section class="footer-actions">
         <button id="clearBtn" class="small-btn">Clear</button>

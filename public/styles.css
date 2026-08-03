@@ -70,7 +70,14 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.9rem;
+}
+
+.prompt-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
 }
 
 h2 {
@@ -78,6 +85,13 @@ h2 {
   font-size: 3rem;
   font-weight: 500;
   text-transform: lowercase;
+}
+
+.translation-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .icon-btn {
@@ -88,6 +102,10 @@ h2 {
   background: transparent;
   font-size: 2rem;
   padding: 0;
+}
+
+.translate-btn {
+  font-size: 1.75rem;
 }
 
 .answer-slots {
@@ -161,6 +179,28 @@ h2 {
   gap: 0.75rem;
 }
 
+.keyboard-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+  align-items: stretch;
+}
+
+.action-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 14px;
+  background: #bababa;
+  color: #111111;
+  font-size: 2.5rem;
+  font-weight: 500;
+  min-height: 4.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .footer-actions {
   display: flex;
   justify-content: center;
@@ -202,6 +242,10 @@ h2 {
     font-size: 2.2rem;
   }
 
+  .translation-text {
+    font-size: 0.85rem;
+  }
+
   .slot {
     width: 4.5rem;
     min-height: 5.2rem;
@@ -223,5 +267,15 @@ h2 {
 
   .vowel-row {
     grid-template-columns: repeat(4, minmax(42px, 1fr));
+  }
+
+  .keyboard-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+  }
+
+  .action-btn {
+    font-size: 2rem;
+    min-height: 3.5rem;
   }
 }
