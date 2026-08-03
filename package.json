@@ -1,0 +1,23 @@
+{
+  "name": "fidel",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node -e \"console.log(\\\"No tests configured\\\")\"",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://localhost:26831/blane-h/Fidel.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "sqlite3": "^6.0.1"
+  }
+}
