@@ -1,25 +1,48 @@
-# TODO
+# TODO — Trainable drawing correctness model
 
-## Plan Steps
+Goal: Replace hardcoded local-compare thresholds in the draw checker with a
+small neural network trained on labeled samples. Gemini becomes a fallback for
+ambiguous predictions.
 
-### Fix: Tune accuracy/correctness logic for the drawing page
+## 1. Shared feature extraction — `public/features.js`
+- [x] 12x12 normalized binary grid of drawing (144)
+- [x] 12x12 normalized binary grid of reference glyph (144)
+- [x] 12x12 distance-transform of reference shape (144)
+- [x] Scalar metrics: overlap, chamfer shape, ink coverage, bbox aspect (4)
+- [x] Total 436-dim feature vector; reuse normalize/dilate/distance logic
 
-#### public/draw.js — Make the local comparison robust and conservative
-- [x] Add `normalizeGrid()` that centers ink by bounding box and scales it to a fixed normalized size (position/size invariant).
-- [x] Add `dilate()` to grow the reference glyph by 1px so slightly thicker/stroke-offset drawings still overlap.
-- [x] Apply normalization + dilation in `localCompare()`.
-- [x] Lower `LOW_MATCH_THRESHOLD` to ~0.30 so only obviously-wrong drawings are rejected locally; borderline (incl. correct-but-imperfect) drawings go to Gemini.
-- [x] Keep `HIGH_MATCH_THRESHOLD` (~0.72) for confident local accepts.
-- [x] Log the similarity score to the browser console for threshold tuning.
+## 2. Temporary labeling page — `public/train.html` + `public/train.js`
+- [x] Draw mode: random fidel, canvas, Correct/Incorrect/Skip buttons
+- [x] Auto-provide mode: generate perturbed correct + wrong drawings, batch label
+- [x] Post each labeled sample (features, expected, label, image) to server
+- [x] Batch size selector (10/25/50)
 
-#### server.js — Rebalance the Gemini prompt
-- [x] Rewrite `RECOGNIZE_PROMPT` to be learner-friendly on penmanship (accept wobble, uneven weight, imperfect proportions, tilt) but strict on identity (reject different fidel, missing/added distinguishing features, unreadable scribbles).
-- [x] Ask Gemini to return `match` plus a `confidence` (0–1).
-- [x] Parse `confidence` in `generateWithGemini()` and surface it in the API response (keep existing `match` parsing working).
+## 3. Persistence — SQLite `drawing_samples` table (server.js)
+- [x] Create table: expected, features JSON, label, image, source, timestamp
+- [x] Endpoint POST /api/train/sample
+- [x] Endpoint GET /api/train/stats
+- [x] Endpoint POST /api/train/clear
 
-#### Preserved unchanged
-- [x] In-memory cache, model fallback, 256px downscaling, 1.2s cooldown, blank/too-small/single-stroke validation.
+## 4. Small NN — `ml/model.js` (pure JS, no deps)
+- [x] Architecture: 436 -> 24 tanh -> 1 sigmoid
+- [x] Binary cross-entropy + Adam + L2, train/validation split, early stopping
+- [x] save/load weights to `model/weights.json` (gitignored)
 
-## Follow-up
-- [x] Syntax check (`node --check server.js` and `node --check public/draw.js`).
-- [ ] Restart server and test: correct-but-imperfect drawing → correct; similar-looking-but-wrong fidel → rejected; scribble/blank → still rejected locally.
+## 5. Server endpoints (server.js)
+- [x] POST /api/model/train — train + save, return metrics + threshold
+- [x] GET /api/model/info — status, sample count, accuracy
+- [x] POST /api/draw/check — NN first, Gemini fallback on ambiguity
+
+## 6. Wire the draw page — `public/draw.js`/`draw.html`
+- [x] Include features.js; compute feature vector on submit
+- [x] Call /api/draw/check; fall back to current local thresholds + Gemini if no model
+
+## 7. Housekeeping
+- [x] styles.css — train page styling + nav Train link
+- [x] .gitignore — model/weights.json
+- [x] README.md + TODO-drawing-leniency.md — document workflow
+
+## Testing
+- [x] node --check on all new JS files
+- [ ] Start server, label batch on /train.html, train model
+- [ ] Verify /draw.html sloppy-correct passes, similar-wrong fails, existing false/similar cases

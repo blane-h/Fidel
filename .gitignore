@@ -1,3 +1,4 @@
 node_modules/
 fidel.db
 .env
+model/weights.json

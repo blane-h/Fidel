@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fidel Train</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="top-nav">
+      <div class="logo" aria-label="Fidel logo">ፊደል</div>
+      <nav>
+        <a href="#">Study</a>
+        <a href="index.html">Spell</a>
+        <a href="draw.html">Draw</a>
+        <a class="active" href="train.html">Train</a>
+      </nav>
+    </header>
+
+    <main class="train-page">
+      <section class="train-controls">
+        <div class="mode-toggle">
+          <button id="drawModeBtn" class="tool-btn active" type="button">Draw</button>
+          <button id="autoModeBtn" class="tool-btn" type="button">Auto</button>
+        </div>
+
+        <div id="batchRow" class="batch-row" hidden>
+          <label for="batchSize">Batch size</label>
+          <select id="batchSize">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+          </select>
+          <button id="generateBtn" class="tool-btn primary" type="button">Generate batch</button>
+        </div>
+
+        <div id="statsBar" class="stats-bar">
+          <span id="statsText">Loading…</span>
+          <button id="refreshStatsBtn" class="tool-btn" type="button">Refresh</button>
+        </div>
+      </section>
+
+      <!-- Draw mode -->
+      <section id="drawMode" class="train-draw">
+        <div class="prompt-area">
+          <button id="swapBtn" class="icon-btn arrow-btn" aria-label="Toggle fidel and latin">⇄</button>
+          <button id="prevBtn" class="icon-btn arrow-btn" aria-label="Previous character">◀</button>
+          <div class="prompt-copy">
+            <h2 id="drawPrompt">fidel</h2>
+            <p id="drawHint" class="prompt-hint" hidden></p>
+          </div>
+          <button id="nextBtn" class="icon-btn arrow-btn" aria-label="Next character">▶</button>
+          <button id="soundBtn" class="icon-btn" aria-label="Play pronunciation">🔊</button>
+        </div>
+
+        <div class="canvas-section">
+          <div class="drawing-frame">
+            <div id="traceLayer" class="trace-layer" hidden></div>
+            <canvas id="drawCanvas" width="420" height="420"></canvas>
+          </div>
+          <div class="reference-frame">
+            <canvas id="referenceCanvas" width="140" height="140"></canvas>
+            <p class="reference-label">Reference</p>
+          </div>
+          <p id="statusMessage" class="status"></p>
+        </div>
+
+        <div class="draw-tools">
+          <button id="traceBtn" class="tool-btn" aria-label="Trace mode">✏️</button>
+          <button id="clearBtn" class="tool-btn" aria-label="Clear drawing">Clear</button>
+          <button id="correctBtn" class="tool-btn success" aria-label="Mark correct">✓ Correct</button>
+          <button id="incorrectBtn" class="tool-btn danger" aria-label="Mark incorrect">✗ Incorrect</button>
+          <button id="skipBtn" class="tool-btn" aria-label="Skip">Skip</button>
+        </div>
+      </section>
+
+      <!-- Auto mode -->
+      <section id="autoMode" class="train-auto" hidden>
+        <div class="auto-header">
+          <p class="auto-hint">
+            Generated drawings shown below. Confirm or flip the suggested label, then
+            click <strong>Save</strong> to submit the batch. <strong>Skip</strong> drops it.
+          </p>
+        </div>
+        <div id="autoGrid" class="auto-grid"></div>
+        <div class="auto-actions">
+          <button id="saveAutoBtn" class="tool-btn primary" type="button" disabled>Save batch</button>
+          <button id="cancelAutoBtn" class="tool-btn" type="button">Cancel</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="/features.js" defer></script>
+    <script src="/train.js" defer></script>
+  </body>
+</html>

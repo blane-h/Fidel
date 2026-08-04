@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const sqlite3 = require('sqlite3').verbose();
+const { trainModel, saveModel, loadModel } = require('./ml/model');
 
 // Load environment variables from .env first, then fall back to .env.example.
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -467,12 +468,24 @@ db.serialize(() => {
     )
   `);
 
-  db.run(`
+db.run(`
     CREATE TABLE IF NOT EXISTS characters (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       fidel TEXT NOT NULL,
       latin TEXT NOT NULL,
       family TEXT NOT NULL
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS drawing_samples (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      expected TEXT NOT NULL,
+      features TEXT NOT NULL,
+      label TEXT NOT NULL,
+      image TEXT,
+      source TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
     )
   `);
 });
@@ -663,6 +676,192 @@ app.post('/api/draw/recognize', async (req, res) => {
     }
     return res.status(500).json({ error: 'Unable to recognize drawing.', detail: error.message });
   }
+});
+
+// ---- Trainable model endpoints --------------------------------------------
+
+// Save a labeled drawing sample.
+app.post('/api/train/sample', async (req, res) => {
+  const { expected, features, label, image, source } = req.body || {};
+
+  if (!expected || !features || !Array.isArray(features)) {
+    return res.status(400).json({ error: 'Missing expected or features array.' });
+  }
+  if (label !== 'correct' && label !== 'incorrect') {
+    return res.status(400).json({ error: 'label must be "correct" or "incorrect".' });
+  }
+
+  try {
+    await dbRun(
+      `INSERT INTO drawing_samples (expected, features, label, image, source)
+       VALUES (?, ?, ?, ?, ?)`,
+      [expected, JSON.stringify(features), label, image || null, source || 'manual']
+    );
+    const countRow = await dbGet('SELECT COUNT(*) AS count FROM drawing_samples');
+    return res.json({ ok: true, total: countRow?.count ?? 0 });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to save sample.', detail: error.message });
+  }
+});
+
+// Label counts by class and source.
+app.get('/api/train/stats', async (_req, res) => {
+  try {
+    const rows = await dbAll(
+      `SELECT label, source, COUNT(*) AS count
+       FROM drawing_samples
+       GROUP BY label, source`
+    );
+    const byLabel = { correct: 0, incorrect: 0 };
+    const bySource = { manual: 0, auto: 0 };
+    let total = 0;
+    for (const row of rows) {
+      byLabel[row.label] = (byLabel[row.label] || 0) + row.count;
+      bySource[row.source] = (bySource[row.source] || 0) + row.count;
+      total += row.count;
+    }
+    return res.json({ total, byLabel, bySource });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to read stats.', detail: error.message });
+  }
+});
+
+// Wipe all labeled samples.
+app.post('/api/train/clear', async (_req, res) => {
+  try {
+    await dbRun('DELETE FROM drawing_samples');
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to clear samples.', detail: error.message });
+  }
+});
+
+// Train the neural network from all labeled samples.
+app.post('/api/model/train', async (req, res) => {
+  const options = req.body || {};
+  try {
+    const rows = await dbAll('SELECT expected, features, label FROM drawing_samples');
+    if (rows.length < 2) {
+      return res.status(400).json({ error: 'Not enough labeled samples to train.' });
+    }
+
+    const dataset = rows
+      .filter((row) => row.label === 'correct' || row.label === 'incorrect')
+      .map((row) => {
+        let features;
+        try {
+          features = typeof row.features === 'string' ? JSON.parse(row.features) : row.features;
+        } catch (_error) {
+          return null;
+        }
+        if (!features || !features.length) {
+          return null;
+        }
+        return { x: features.slice(), y: row.label === 'correct' ? 1 : 0 };
+      })
+      .filter(Boolean);
+
+    if (dataset.length < 2) {
+      return res.status(400).json({ error: 'No usable labeled samples found.' });
+    }
+
+    const result = trainModel(dataset, {
+      epochs: Number(options.epochs) || 2000,
+      learningRate: Number(options.learningRate) || 0.005,
+      l2: Number(options.l2) || 1e-4,
+      valFraction: Number(options.valFraction) || 0.15
+    });
+
+    saveModel(result.net, {
+      threshold: result.threshold,
+      sampleCount: result.sampleCount,
+      trainAccuracy: result.train.accuracy,
+      valAccuracy: result.val.accuracy,
+      finalAccuracy: result.final.accuracy,
+      architecture: 'mlp-436-24-1'
+    });
+
+    return res.json({
+      trained: true,
+      sampleCount: result.sampleCount,
+      threshold: result.threshold,
+      train: result.train,
+      val: result.val,
+      final: result.final
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Training failed.', detail: error.message });
+  }
+});
+
+// Model status.
+app.get('/api/model/info', async (_req, res) => {
+  try {
+    const countRow = await dbGet('SELECT COUNT(*) AS count FROM drawing_samples');
+    const model = loadModel();
+    return res.json({
+      trained: Boolean(model),
+      sampleCount: countRow?.count ?? 0,
+      architecture: model ? 'mlp-436-24-1' : null,
+      threshold: model && model.threshold != null ? model.threshold : null,
+      metadata: model ? model.metadata : null
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Unable to read model info.', detail: error.message });
+  }
+});
+
+// New checker: run the trained model first, fall back to Gemini on ambiguity.
+app.post('/api/draw/check', async (req, res) => {
+  const { image, reference, expected, features } = req.body || {};
+
+  if (!expected) {
+    return res.status(400).json({ error: 'Missing expected character.' });
+  }
+
+  const model = loadModel();
+  if (model && features && Array.isArray(features) && features.length === model.inputSize) {
+    const probability = model.predict(features);
+    const threshold = model.threshold != null ? model.threshold : 0.5;
+    // Ambiguity band: if the model is highly confident one way, use it. Otherwise
+    // defer to Gemini (identity-sensitive) when available.
+    const AMBIGUITY_MARGIN = 0.15;
+    if (probability >= threshold + AMBIGUITY_MARGIN) {
+      return res.json({
+        match: true,
+        confidence: probability,
+        threshold,
+        expected,
+        source: 'model'
+      });
+    }
+    if (probability <= threshold - AMBIGUITY_MARGIN) {
+      return res.json({
+        match: false,
+        confidence: probability,
+        threshold,
+        expected,
+        source: 'model'
+      });
+    }
+    // Ambiguous -> fall through to Gemini.
+    return res.json({
+      match: null,
+      confidence: probability,
+      threshold,
+      expected,
+      source: 'model-ambiguous',
+      requireGemini: true
+    });
+  }
+
+  // No usable model -> tell the client to use the legacy local+Gemini path.
+  return res.json({
+    match: null,
+    expected,
+    source: 'no-model',
+    requireGemini: true
+  });
 });
 
 app.get('/api/words/pronunciations/backfill', async (_req, res) => {

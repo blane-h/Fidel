@@ -43,11 +43,18 @@ sending to reduce payload size, and a short cooldown prevents rapid duplicate su
 
 To keep the local comparison fair to a learner's handwriting, the drawing and the reference
 glyph are both **normalized** (centered and scaled to a fixed size) before being compared, so
-an off-center or differently-sized drawing is not unfairly penalized. The reference glyph is
-also **dilated** by a pixel so normal nib thickness and minor wobble still overlap. The low
-threshold is kept conservative so only clearly-wrong drawings are rejected locally; correct-but
--imperfect handwriting is sent to Gemini for a real judgment. The similarity score is logged to
-the browser console for tuning.
+an off-center or differently-sized drawing is not unfairly penalized. Both images are then
+**dilated** by a pixel so normal nib thickness and minor pen wobble still overlap, and the
+comparison uses two complementary metrics:
+- a **pixel-overlap** (normalized XOR) similarity, and
+- a **Chamfer distance-based shape similarity** that measures how close each drawing pixel is
+  to the reference shape (tolerant of wobble, uneven stroke thickness, and minor offset).
+
+A drawing is accepted locally when **either** metric is confidently high (indicating the
+relative shape is correct), and rejected locally only when **both** metrics are clearly low
+(obviously a different shape or scribble). Everything in between is sent to Gemini for a real
+identity judgment, so a similar-looking-but-different fidel is still correctly rejected. The
+overlap and shape scores are logged to the browser console for tuning.
 
 The Gemini prompt is written to be **tolerant of penmanship** (wobble, uneven stroke weight,
 imperfect proportions, small tilt) but **strict about character identity** (a different fidel,
