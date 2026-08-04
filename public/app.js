@@ -97,16 +97,14 @@ function renderVowels(index) {
     const btn = document.createElement('button');
     btn.className = 'vowel-btn';
     btn.type = 'button';
-    btn.textContent = char;
-    btn.addEventListener('click', () => addCharacter(char));
+    btn.textContent = char.fidel;
+    btn.addEventListener('click', () => addCharacter(char.fidel));
     vowelRow.appendChild(btn);
   });
 
   document.querySelectorAll('.consonant-btn').forEach((btn, idx) => {
     btn.classList.toggle('active', idx === index);
   });
-
-  vowelCard.hidden = false;
 }
 
 function renderConsonants() {
@@ -128,6 +126,11 @@ async function loadWord() {
   currentWord = word;
   answer = [];
   translationVisible = false;
+  selectedFamilyIndex = null;
+  vowelRow.innerHTML = '';
+  document.querySelectorAll('.consonant-btn').forEach((btn) => {
+    btn.classList.remove('active');
+  });
   latinPrompt.textContent = word.latin;
   translationText.textContent = word.translation || '';
   translationText.hidden = true;
@@ -201,6 +204,16 @@ clearBtn.addEventListener('click', () => {
 backspaceBtn.addEventListener('click', removeCharacter);
 
 enterBtn.addEventListener('click', submitAnswer);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Backspace') {
+    event.preventDefault();
+    removeCharacter();
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    submitAnswer();
+  }
+});
 
 newWordBtn.addEventListener('click', loadWord);
 

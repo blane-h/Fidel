@@ -1,12 +1,96 @@
 const path = require('path');
+const dotenv = require('dotenv');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const sqlite3 = require('sqlite3').verbose();
+
+// Load environment variables from .env first, then fall back to .env.example.
+dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, '.env.example'), override: false });
 
 const app = express();
 const port = process.env.PORT || 3000;
 const targetWordCount = 1000;
 const kaikkiWordListUrl = 'https://kaikki.org/dictionary/Amharic/words/kaikki.org-dictionary-Amharic-words.jsonl';
+
+// TODO: Add your Gemini API key here or via the GEMINI_API_KEY environment variable.
+// Example: GEMINI_API_KEY=your-key-here npm start
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+// Ordered list of models. When one is rate-limited / quota exceeded, we try the next.
+const GEMINI_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash'
+];
+// Simple in-memory result cache to avoid re-calling Gemini for identical submissions.
+const recognizeCache = new Map();
+const MAX_CACHE_SIZE = 500;
+
+function simpleHash(input) {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = ((hash << 5) + hash + input.charCodeAt(i)) | 0;
+  }
+  return String(hash >>> 0);
+}
+
+// Try each Gemini model in order. On quota/rate-limit, move to the next model.
+// Throws with error.quota = true only if ALL models are rate-limited.
+async function generateWithGemini(parts) {
+  let lastError = null;
+
+  for (const model of GEMINI_MODELS) {
+    try {
+      const response = await fetch(`${GEMINI_BASE_URL}/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: { temperature: 0, responseMimeType: 'application/json' }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const quotaExceeded = /quota|429|rate.?limit|resource exhausted/i.test(errorText);
+        if (quotaExceeded) {
+          lastError = new Error('Gemini quota exceeded');
+          lastError.quota = true;
+          continue;
+        }
+        const requestError = new Error(`Gemini request failed: ${errorText.slice(0, 300)}`);
+        requestError.status = response.status;
+        throw requestError;
+      }
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const cleaned = String(text).replace(/```(?:json)?/gi, '').trim();
+      const match = /"match"\s*:\s*true/i.test(cleaned);
+      // Parse the optional confidence score (0-1) the model may return.
+      const confidenceMatch = cleaned.match(/"confidence"\s*:\s*([0-9]*\.?[0-9]+)/i);
+      const confidence = confidenceMatch
+        ? Math.max(0, Math.min(1, Number.parseFloat(confidenceMatch[1])))
+        : null;
+      return { match, confidence, model };
+    } catch (error) {
+      if (error && error.quota) {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError || new Error('All Gemini models failed.');
+}
+
+const vowelSuffixes = ['a', 'u', 'i', 'a', 'e', 'e', 'o'];
+const latinFamilies = [
+  'ha', 'la', 'ma', 'sa', 'ra', 'sa', 'sha', 'qa', 'ba', 'va', 'ta', 'cha', 'xa', 'na', 'nya',
+  'a', 'ka', 'xa', 'wa', 'a', 'za', 'za', 'ya', 'da', 'ja', 'ga', 'ta', 'cha', 'pa', 'sa', 'sa', 'fa', 'pa'
+];
 
 const consonantFamilies = [
   ['ሀ', 'ሁ', 'ሂ', 'ሃ', 'ሄ', 'ህ', 'ሆ'],
@@ -258,6 +342,41 @@ async function refreshWordBank() {
   return { added: realWords.length, total: updatedRow?.count ?? realWords.length };
 }
 
+async function refreshCharacterBank() {
+  const countRow = await dbGet('SELECT COUNT(*) AS count FROM characters');
+  if ((countRow?.count ?? 0) === consonantFamilies.reduce((sum, family) => sum + family.length, 0)) {
+    return { added: 0, total: countRow.count };
+  }
+
+  await dbRun('DELETE FROM characters');
+  const insert = db.prepare(
+    'INSERT INTO characters (fidel, latin, family) VALUES (?, ?, ?)'
+  );
+
+  consonantFamilies.forEach((family, familyIndex) => {
+    const baseLatin = latinFamilies[familyIndex] || 'a';
+    family.forEach((fidel, vowelIndex) => {
+      const vowelSuffix = vowelSuffixes[vowelIndex] || '';
+      const latin = `${baseLatin}${vowelSuffix !== 'a' ? vowelSuffix : ''}`;
+      insert.run(fidel, latin, baseLatin);
+    });
+  });
+
+  await new Promise((resolve, reject) => {
+    insert.finalize((err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve();
+    });
+  });
+
+  const updatedRow = await dbGet('SELECT COUNT(*) AS count FROM characters');
+  return { added: updatedRow?.count ?? 0, total: updatedRow?.count ?? 0 };
+}
+
 async function ensureColumn(tableName, columnName, columnDefinition) {
   const columns = await dbAll(`PRAGMA table_info(${tableName})`);
   const hasColumn = columns.some((column) => column.name === columnName);
@@ -347,6 +466,15 @@ db.serialize(() => {
       pronunciation_source TEXT
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS characters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fidel TEXT NOT NULL,
+      latin TEXT NOT NULL,
+      family TEXT NOT NULL
+    )
+  `);
 });
 
 app.use(express.json());
@@ -362,10 +490,19 @@ const wordsRateLimiter = rateLimit({
 
 app.get('/api/alphabet', (_req, res) => {
   res.json(
-    consonantFamilies.map((family) => ({
-      consonant: family[0],
-      vowels: family
-    }))
+    consonantFamilies.map((family, familyIndex) => {
+      const baseLatin = latinFamilies[familyIndex] || 'a';
+      return {
+        consonant: family[0],
+        vowels: family.map((fidel, vowelIndex) => {
+          const vowelSuffix = vowelSuffixes[vowelIndex] || '';
+          return {
+            fidel,
+            latin: `${baseLatin}${vowelSuffix !== 'a' ? vowelSuffix : ''}`
+          };
+        })
+      };
+    })
   );
 });
 
@@ -425,6 +562,109 @@ app.get('/api/words/:id/audio', wordsRateLimiter, (req, res) => {
   );
 });
 
+app.get('/api/draw/random', (_req, res) => {
+  db.get(
+    'SELECT id, fidel, latin, family FROM characters ORDER BY RANDOM() LIMIT 1',
+    (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: 'Unable to load character.' });
+      }
+
+      if (!row) {
+        return res.status(404).json({ error: 'No characters found.' });
+      }
+
+      return res.json(row);
+    }
+  );
+});
+
+const RECOGNIZE_PROMPT = (expected) => `You are an Amharic fidel (Ge'ez script) handwriting recognizer for a language-learning app. The learner drew a handwritten character. The expected character is "${expected}".
+
+You are given TWO images:
+1. The learner's drawing (the handwritten character to evaluate).
+2. The REFERENCE image (the correct, expected fidel rendered as a clear glyph).
+
+Amharic has MANY characters that look similar and differ only by small details (position of a head/loop, number of dots, a short diacritic stroke, the direction of a diagonal, a small tail, etc.). Your job is to judge whether the drawing is recognizably the SAME character as the reference, while being fair to a human learner's handwriting.
+
+Be TOLERANT of normal handwriting variation. A drawing is still a match when the learner drew the correct character but with:
+- wobble, uneven strokes, or slightly wobbly lines;
+- uneven stroke thickness or different nib width than the reference;
+- imperfect proportions, slightly compressed or stretched shapes;
+- a small tilt or rotation, or rounded corners instead of sharp ones;
+- the character drawn off-center or at a different size.
+
+Be STRICT about the character's IDENTITY. It is NOT a match if the drawing is a DIFFERENT fidel:
+- The drawing is another Amharic character that merely resembles the reference (e.g. differs in the number/position of dots, a missing or extra head/loop/tail, a wrong or missing diagonal/diacritic stroke, the wrong branch or branch direction, or the wrong orientation of a small element).
+- The drawing is missing one of the reference fidel's key distinguishing features, or has an extra distinguishing feature that makes it read as a different character.
+- The drawing is unreadable: a single dot, a single straight line, a simple squiggle, a random abstract shape, or any scribble that does not resemble the reference fidel.
+- The drawing is incomplete or ambiguous such that a reader could not tell it is the reference fidel.
+
+Rule of thumb: If a reasonable Amharic reader would read the drawing as the expected character, it is a match, even if the penmanship is sloppy. If the drawing would more likely be read as a DIFFERENT fidel (or anything else), it is not a match.
+
+Return JSON with two fields:
+1. "match": true if the drawing is recognizably the expected character, false otherwise.
+2. "confidence": a number from 0 to 1 expressing how confident you are in your decision (1 = absolutely certain, 0 = no idea).
+
+Only return the JSON object, nothing else.`;
+
+app.post('/api/draw/recognize', async (req, res) => {
+  const { image, reference, expected } = req.body || {};
+
+  if (!image || !expected) {
+    return res.status(400).json({ error: 'Missing image or expected character.' });
+  }
+
+  if (!GEMINI_API_KEY) {
+    return res.status(503).json({
+      error: 'Gemini API key is not configured.',
+      hint: 'Set the GEMINI_API_KEY environment variable.',
+      expected
+    });
+  }
+
+  const base64Data = String(image).replace(/^data:image\/\w+;base64,/, '');
+  const referenceBase64 = reference ? String(reference).replace(/^data:image\/\w+;base64,/, '') : null;
+
+  try {
+    // Cache identical submissions to avoid re-calling Gemini.
+    const cacheKey = simpleHash(`${base64Data}|${referenceBase64 || ''}|${expected}`);
+    const cached = recognizeCache.get(cacheKey);
+    if (cached) {
+      return res.json({ ...cached, cached: true });
+    }
+
+    const parts = [
+      { text: RECOGNIZE_PROMPT(expected) },
+      { inline_data: { mime_type: 'image/png', data: base64Data } }
+    ];
+
+    // If a reference image is provided, include it so Gemini can compare shapes.
+    if (referenceBase64) {
+      parts.push({ inline_data: { mime_type: 'image/png', data: referenceBase64 } });
+    }
+
+    const { match, confidence, model } = await generateWithGemini(parts);
+
+    const result = { match, confidence, expected, model };
+    recognizeCache.set(cacheKey, result);
+    if (recognizeCache.size > MAX_CACHE_SIZE) {
+      const oldestKey = recognizeCache.keys().next().value;
+      recognizeCache.delete(oldestKey);
+    }
+
+    return res.json(result);
+  } catch (error) {
+    if (error && error.quota) {
+      return res.status(503).json({
+        error: 'Gemini is unavailable (quota exceeded). Please try again later.',
+        expected
+      });
+    }
+    return res.status(500).json({ error: 'Unable to recognize drawing.', detail: error.message });
+  }
+});
+
 app.get('/api/words/pronunciations/backfill', async (_req, res) => {
   try {
     const words = await dbAll(
@@ -459,6 +699,9 @@ async function startServer() {
 
     const seedSummary = await refreshWordBank();
     console.log(`Seed words ready: ${seedSummary.total} total words in database.`);
+
+    const charSeedSummary = await refreshCharacterBank();
+    console.log(`Character bank ready: ${charSeedSummary.total} total characters in database.`);
   } catch (error) {
     console.warn('Database seed skipped:', error.message);
   }
