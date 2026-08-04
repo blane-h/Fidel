@@ -17,7 +17,58 @@ let selectedFamilyIndex = null;
 let currentWord = null;
 let answer = [];
 let currentAudio = null;
-let translationVisible = false;
+let activeConsonantBtn = null;
+const KEYBOARD_KEY_WIDTH = 55;
+const KEYBOARD_KEY_GAP = 4;
+const KEYBOARD_KEY_TOTAL = KEYBOARD_KEY_WIDTH + KEYBOARD_KEY_GAP;
+const KEYBOARD_ROW_TOP = 0;
+const KEYBOARD_ROW_HOME = KEYBOARD_KEY_TOTAL;
+const KEYBOARD_ROW_BOTTOM = KEYBOARD_KEY_TOTAL * 2;
+const KEYBOARD_KEY_HEIGHT = 55;
+const KEYBOARD_ROW_GAP = 10;
+
+const qwertyRows = [
+  ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\'],
+  ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'"],
+  ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'],
+];
+
+const fidelByKey = {
+  q: { fidel: 'ሀ', latin: 'ha' },
+  w: { fidel: 'ለ', latin: 'la' },
+  e: { fidel: 'መ', latin: 'ma' },
+  r: { fidel: 'ሠ', latin: 'sa' },
+  t: { fidel: 'ረ', latin: 'ra' },
+  y: { fidel: 'ሰ', latin: 'sa' },
+  u: { fidel: 'ሸ', latin: 'sha' },
+  i: { fidel: 'ቀ', latin: 'qa' },
+  o: { fidel: 'በ', latin: 'ba' },
+  p: { fidel: 'ቨ', latin: 'va' },
+  '[': { fidel: 'ተ', latin: 'ta' },
+  ']': { fidel: 'ቸ', latin: 'cha' },
+  '\\': { fidel: 'ኀ', latin: 'xa' },
+  a: { fidel: 'ነ', latin: 'na' },
+  s: { fidel: 'ኘ', latin: 'nya' },
+  d: { fidel: 'አ', latin: 'a' },
+  f: { fidel: 'ከ', latin: 'ka' },
+  g: { fidel: 'ኸ', latin: 'xa' },
+  h: { fidel: 'ወ', latin: 'wa' },
+  j: { fidel: 'ዐ', latin: 'a' },
+  k: { fidel: 'ዘ', latin: 'za' },
+  l: { fidel: 'ዠ', latin: 'za' },
+  ';': { fidel: 'የ', latin: 'ya' },
+  "'": { fidel: 'ደ', latin: 'da' },
+  z: { fidel: 'ጀ', latin: 'ja' },
+  x: { fidel: 'ገ', latin: 'ga' },
+  c: { fidel: 'ጠ', latin: 'ta' },
+  v: { fidel: 'ጨ', latin: 'cha' },
+  b: { fidel: 'ጰ', latin: 'pa' },
+  n: { fidel: 'ጸ', latin: 'sa' },
+  m: { fidel: 'ፀ', latin: 'sa' },
+  ',': { fidel: 'ፈ', latin: 'fa' },
+  '.': { fidel: 'ፐ', latin: 'pa' },
+  '/': { fidel: 'ሸ', latin: 'sha' },
+};
 
 function renderSlots() {
   answerSlots.innerHTML = '';
@@ -88,36 +139,89 @@ function submitAnswer() {
   evaluateAnswer();
 }
 
+function setActiveConsonantBtn(btn) {
+  if (activeConsonantBtn) {
+    activeConsonantBtn.classList.remove('active');
+  }
+  activeConsonantBtn = btn;
+  if (btn) {
+    btn.classList.add('active');
+  }
+}
+
 function renderVowels(index) {
   selectedFamilyIndex = index;
   vowelRow.innerHTML = '';
 
   const family = alphabet[index]?.vowels || [];
-  family.forEach((char) => {
+  family.forEach((char, vowelIndex) => {
     const btn = document.createElement('button');
     btn.className = 'vowel-btn';
     btn.type = 'button';
-    btn.textContent = char.fidel;
+    btn.dataset.vowelIndex = vowelIndex;
+    btn.innerHTML = `<span class="vowel-char">${char.fidel}</span><span class="vowel-number">${vowelIndex + 1}</span>`;
     btn.addEventListener('click', () => addCharacter(char.fidel));
     vowelRow.appendChild(btn);
   });
+}
 
-  document.querySelectorAll('.consonant-btn').forEach((btn, idx) => {
-    btn.classList.toggle('active', idx === index);
+function renderKeyboardRow(keys, rowTop, rowLeftOffset) {
+  const row = document.createElement('div');
+  row.className = 'keyboard-row';
+  row.style.top = `${rowTop}px`;
+
+  keys.forEach((key, index) => {
+    const entry = fidelByKey[key];
+    if (!entry) {
+      const spacer = document.createElement('div');
+      spacer.className = 'key-spacer';
+      row.appendChild(spacer);
+      return;
+    }
+
+    const btn = document.createElement('button');
+    btn.className = 'consonant-btn';
+    btn.type = 'button';
+    btn.dataset.key = key;
+    btn.innerHTML = `<span class="fidel-char">${entry.fidel}</span><span class="latin-hint">${key}</span>`;
+    btn.style.left = `${rowLeftOffset + index * KEYBOARD_KEY_TOTAL}px`;
+    btn.addEventListener('click', () => {
+      const idx = alphabet.findIndex((family) => family.consonant === entry.fidel);
+      if (idx !== -1) {
+        setActiveConsonantBtn(btn);
+        renderVowels(idx);
+      }
+    });
+    row.appendChild(btn);
   });
+
+  return row;
 }
 
 function renderConsonants() {
   consonantGrid.innerHTML = '';
-
-  alphabet.forEach((family, index) => {
-    const btn = document.createElement('button');
-    btn.className = 'consonant-btn';
-    btn.type = 'button';
-    btn.textContent = family.consonant;
-    btn.addEventListener('click', () => renderVowels(index));
-    consonantGrid.appendChild(btn);
+  const rowConfigs = [
+    { keys: qwertyRows[0], top: KEYBOARD_ROW_TOP, left: KEYBOARD_ROW_TOP },
+    { keys: qwertyRows[1], top: KEYBOARD_ROW_TOP + KEYBOARD_KEY_HEIGHT + KEYBOARD_ROW_GAP, left: KEYBOARD_ROW_HOME },
+    { keys: qwertyRows[2], top: KEYBOARD_ROW_TOP + (KEYBOARD_KEY_HEIGHT + KEYBOARD_ROW_GAP) * 2, left: KEYBOARD_ROW_BOTTOM },
+  ];
+  rowConfigs.forEach((config) => {
+    consonantGrid.appendChild(renderKeyboardRow(config.keys, config.top, config.left));
   });
+}
+
+function fitKeyboard() {
+  if (!consonantGrid) return;
+  const section = consonantGrid.parentElement;
+  if (!section) return;
+
+  const style = getComputedStyle(section);
+  const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+  const availableWidth = section.clientWidth - paddingX;
+  const naturalWidth = 770;
+  const scale = Math.min(1, availableWidth / naturalWidth);
+  consonantGrid.style.transform = `scale(${scale})`;
+  consonantGrid.style.transformOrigin = 'top center';
 }
 
 async function loadWord() {
@@ -128,9 +232,7 @@ async function loadWord() {
   translationVisible = false;
   selectedFamilyIndex = null;
   vowelRow.innerHTML = '';
-  document.querySelectorAll('.consonant-btn').forEach((btn) => {
-    btn.classList.remove('active');
-  });
+  setActiveConsonantBtn(null);
   latinPrompt.textContent = word.latin;
   translationText.textContent = word.translation || '';
   translationText.hidden = true;
@@ -171,7 +273,11 @@ async function init() {
 
   renderConsonants();
   await loadWord();
+  fitKeyboard();
 }
+
+window.addEventListener('resize', fitKeyboard);
+window.addEventListener('load', fitKeyboard);
 
 soundBtn.addEventListener('click', async () => {
   if (!currentWord?.id) {
@@ -212,6 +318,28 @@ document.addEventListener('keydown', (event) => {
   } else if (event.key === 'Enter') {
     event.preventDefault();
     submitAnswer();
+    return;
+  }
+
+  const entry = fidelByKey[event.key];
+  if (!entry) {
+    const vowelIndex = Number(event.key);
+    if (Number.isInteger(vowelIndex) && vowelIndex >= 1 && vowelIndex <= 7 && selectedFamilyIndex !== null) {
+      const family = alphabet[selectedFamilyIndex]?.vowels || [];
+      const char = family[vowelIndex - 1];
+      if (char) {
+        addCharacter(char.fidel);
+      }
+      return;
+    }
+    return;
+  }
+
+  const idx = alphabet.findIndex((family) => family.consonant === entry.fidel);
+  if (idx !== -1) {
+    const btn = consonantGrid.querySelector(`[data-key="${event.key}"]`);
+    setActiveConsonantBtn(btn);
+    renderVowels(idx);
   }
 });
 
