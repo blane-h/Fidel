@@ -18,6 +18,7 @@ let currentWord = null;
 let answer = [];
 let currentAudio = null;
 let activeConsonantBtn = null;
+let showingFidel = false;
 const KEYBOARD_KEY_WIDTH = 55;
 const KEYBOARD_KEY_GAP = 4;
 const KEYBOARD_KEY_TOTAL = KEYBOARD_KEY_WIDTH + KEYBOARD_KEY_GAP;
@@ -67,7 +68,7 @@ const fidelByKey = {
   m: { fidel: 'ፀ', latin: 'sa' },
   ',': { fidel: 'ፈ', latin: 'fa' },
   '.': { fidel: 'ፐ', latin: 'pa' },
-  '/': { fidel: 'ሸ', latin: 'sha' },
+  '/': { fidel: 'ሐ', latin: 'ha' },
 };
 
 function renderSlots() {
@@ -80,6 +81,43 @@ function renderSlots() {
     slot.textContent = answer[i] || '';
     answerSlots.appendChild(slot);
   }
+}
+
+function normalizeAmharicChar(char) {
+  const map = {
+    'ሀ': 'ሀ', 'ሁ': 'ሁ', 'ሂ': 'ሂ', 'ሃ': 'ሃ', 'ሄ': 'ሄ', 'ህ': 'ህ', 'ሆ': 'ሆ',
+    'ሐ': 'ሀ', 'ሑ': 'ሁ', 'ሒ': 'ሂ', 'ሓ': 'ሃ', 'ሔ': 'ሄ', 'ሕ': 'ህ', 'ሖ': 'ሆ',
+    'ጸ': 'ጸ', 'ጹ': 'ጹ', 'ጺ': 'ጺ', 'ጻ': 'ጻ', 'ጼ': 'ጼ', 'ጽ': 'ጽ', 'ጾ': 'ጾ',
+    'ፀ': 'ጸ', 'ፁ': 'ጹ', 'ፂ': 'ጺ', 'ፃ': 'ጻ', 'ፄ': 'ጼ', 'ፅ': 'ጽ', 'ፆ': 'ጾ'
+  };
+  return map[char] || char;
+}
+
+function getAlternateFidelForms(word) {
+  const swapPairs = [
+    { from: 'ሀ', to: 'ሐ' }, { from: 'ሁ', to: 'ሑ' }, { from: 'ሂ', to: 'ሒ' }, { from: 'ሃ', to: 'ሓ' }, { from: 'ሄ', to: 'ሔ' }, { from: 'ህ', to: 'ሕ' }, { from: 'ሆ', to: 'ሖ' },
+    { from: 'ሐ', to: 'ሀ' }, { from: 'ሑ', to: 'ሁ' }, { from: 'ሒ', to: 'ሂ' }, { from: 'ሓ', to: 'ሃ' }, { from: 'ሔ', to: 'ሄ' }, { from: 'ሕ', to: 'ህ' }, { from: 'ሖ', to: 'ሆ' },
+    { from: 'ጸ', to: 'ፀ' }, { from: 'ጹ', to: 'ፁ' }, { from: 'ጺ', to: 'ፂ' }, { from: 'ጻ', to: 'ፃ' }, { from: 'ጼ', to: 'ፄ' }, { from: 'ጽ', to: 'ፅ' }, { from: 'ጾ', to: 'ፆ' },
+    { from: 'ፀ', to: 'ጸ' }, { from: 'ፁ', to: 'ጹ' }, { from: 'ፂ', to: 'ጺ' }, { from: 'ፃ', to: 'ጻ' }, { from: 'ፄ', to: 'ጼ' }, { from: 'ፅ', to: 'ጽ' }, { from: 'ፆ', to: 'ጾ' }
+  ];
+  
+  const forms = new Set([word]);
+  
+  for (const pair of swapPairs) {
+    const newForms = new Set(forms);
+    for (const form of forms) {
+      let i = form.indexOf(pair.from);
+      while (i !== -1) {
+        const swapped = form.slice(0, i) + pair.to + form.slice(i + 1);
+        newForms.add(swapped);
+        i = form.indexOf(pair.from, i + 1);
+      }
+    }
+    forms.clear();
+    for (const f of newForms) forms.add(f);
+  }
+  
+  return Array.from(forms);
 }
 
 function evaluateAnswer() {
@@ -95,7 +133,23 @@ function evaluateAnswer() {
   }
 
   const typed = answer.join('');
-  if (typed === currentWord.amharic) {
+  const expected = currentWord.amharic;
+
+  if (typed === expected) {
+    statusMessage.textContent = 'Correct! Great job.';
+    statusMessage.classList.add('success');
+    return;
+  }
+
+  let isCorrect = true;
+  for (let i = 0; i < typed.length; i += 1) {
+    if (normalizeAmharicChar(typed[i]) !== normalizeAmharicChar(expected[i])) {
+      isCorrect = false;
+      break;
+    }
+  }
+
+  if (isCorrect) {
     statusMessage.textContent = 'Correct! Great job.';
     statusMessage.classList.add('success');
   } else {
@@ -230,6 +284,7 @@ async function loadWord() {
   currentWord = word;
   answer = [];
   translationVisible = false;
+  showingFidel = false;
   selectedFamilyIndex = null;
   vowelRow.innerHTML = '';
   setActiveConsonantBtn(null);
@@ -263,8 +318,30 @@ translateBtn.addEventListener('click', () => {
   }
 
   translationVisible = !translationVisible;
+  translationText.textContent = currentWord.translation;
   translationText.hidden = !translationVisible;
   translateBtn.setAttribute('aria-pressed', String(translationVisible));
+});
+
+fidelToggleBtn.addEventListener('click', () => {
+  if (!currentWord) {
+    return;
+  }
+
+  showingFidel = !showingFidel;
+  
+  if (showingFidel) {
+    const alternateForms = getAlternateFidelForms(currentWord.amharic);
+    if (alternateForms.length > 1) {
+      latinPrompt.innerHTML = alternateForms.join('<br><span class="or-separator">or</span><br>');
+    } else {
+      latinPrompt.textContent = currentWord.amharic;
+    }
+  } else {
+    latinPrompt.textContent = currentWord.latin;
+  }
+  
+  fidelToggleBtn.setAttribute('aria-pressed', String(showingFidel));
 });
 
 async function init() {

@@ -88,13 +88,20 @@ h2 {
   font-size: 3rem;
   font-weight: 500;
   text-transform: lowercase;
+  text-align: center;
+}
+
+.or-separator {
+  font-size: 1.5rem;
+  font-weight: 500;
 }
 
 .translation-text {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--muted);
+  color: #000;
   font-weight: 600;
+  text-align: center;
 }
 
 .icon-btn {
@@ -109,6 +116,12 @@ h2 {
 
 .translate-btn {
   font-size: 1.75rem;
+}
+
+.icon-btn[aria-pressed="true"] {
+  color: #111;
+  background: #e0e0e0;
+  border-radius: 10px;
 }
 
 .answer-slots {
@@ -147,8 +160,7 @@ h2 {
   color: var(--danger);
 }
 
-.keyboard-section,
-.vowel-section {
+.keyboard-section {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
@@ -156,7 +168,7 @@ h2 {
 
 .keyboard-section {
   background: #2b2b2b;
-  padding: 1.2rem 0.5rem 1rem;
+  padding: 1.2rem 1rem 1rem;
   border-radius: 18px;
   box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 12px 24px rgba(0,0,0,0.18);
   border: 1px solid #1a1a1a;
@@ -207,6 +219,51 @@ h2 {
   transform: translateY(0);
   position: absolute;
   top: 0;
+}
+
+.consonant-btn.active {
+  background: linear-gradient(180deg, #7f8084 0%, #6a6b6f 100%);
+  color: white;
+  box-shadow: 0 4px 0 #4a4b4e, 0 6px 8px rgba(0,0,0,0.25);
+}
+
+.consonant-btn.active:active {
+  box-shadow: 0 1px 0 #4a4b4e, 0 2px 4px rgba(0,0,0,0.25);
+}
+
+.fidel-char {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.latin-hint {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #666;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.consonant-btn.active .latin-hint {
+  color: #e8e8e8;
+}
+
+.vowel-row-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.6rem;
+}
+
+.vowel-row {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
 }
 
 .consonant-btn:hover {
@@ -292,27 +349,6 @@ h2 {
   letter-spacing: 0.02em;
 }
 
-.vowel-section {
-  padding: 0.6rem 0 0;
-  min-height: 4.5rem;
-}
-
-.vowel-row-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.vowel-row {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  gap: 0.4rem;
-  flex-wrap: nowrap;
-}
-
 .action-btn {
   border: none;
   cursor: pointer;
@@ -396,8 +432,7 @@ h2 {
     font-size: 5rem;
   }
 
-  .keyboard-section,
-  .vowel-section {
+  .keyboard-section {
     max-width: 100%;
   }
 
@@ -428,10 +463,6 @@ h2 {
     font-size: 0.6rem;
   }
 
-  .vowel-section {
-    padding: 0.5rem 0 0;
-  }
-
   .vowel-row {
     gap: 0.3rem;
   }
@@ -455,10 +486,6 @@ h2 {
 
   .vowel-number {
     font-size: 0.6rem;
-  }
-
-  .vowel-section {
-    padding: 0.5rem 0.5rem 0;
   }
 
   .vowel-row-container {

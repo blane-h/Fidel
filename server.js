@@ -13,6 +13,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 const targetWordCount = 1000;
 const kaikkiWordListUrl = 'https://kaikki.org/dictionary/Amharic/words/kaikki.org-dictionary-Amharic-words.jsonl';
+let specialWordRequestCount = 0;
+const specialWordChars = ['ጸ', 'ፀ', 'ሀ', 'ሐ'];
 
 // TODO: Add your Gemini API key here or via the GEMINI_API_KEY environment variable.
 // Example: GEMINI_API_KEY=your-key-here npm start
@@ -89,12 +91,13 @@ async function generateWithGemini(parts) {
 
 const vowelSuffixes = ['a', 'u', 'i', 'a', 'e', 'e', 'o'];
 const latinFamilies = [
-  'ha', 'la', 'ma', 'sa', 'ra', 'sa', 'sha', 'qa', 'ba', 'va', 'ta', 'cha', 'xa', 'na', 'nya',
+  'ha', 'ha', 'la', 'ma', 'sa', 'ra', 'sa', 'sha', 'qa', 'ba', 'va', 'ta', 'cha', 'xa', 'na', 'nya',
   'a', 'ka', 'xa', 'wa', 'a', 'za', 'za', 'ya', 'da', 'ja', 'ga', 'ta', 'cha', 'pa', 'sa', 'sa', 'fa', 'pa'
 ];
 
 const consonantFamilies = [
   ['ሀ', 'ሁ', 'ሂ', 'ሃ', 'ሄ', 'ህ', 'ሆ'],
+  ['ሐ', 'ሑ', 'ሒ', 'ሓ', 'ሔ', 'ሕ', 'ሖ'],
   ['ለ', 'ሉ', 'ሊ', 'ላ', 'ሌ', 'ል', 'ሎ'],
   ['መ', 'ሙ', 'ሚ', 'ማ', 'ሜ', 'ም', 'ሞ'],
   ['ሠ', 'ሡ', 'ሢ', 'ሣ', 'ሤ', 'ሥ', 'ሦ'],
@@ -520,28 +523,42 @@ app.get('/api/alphabet', (_req, res) => {
 });
 
 app.get('/api/words/random', wordsRateLimiter, (_req, res) => {
-  db.get(
-    `SELECT
-      id,
-      latin,
-      amharic,
-      translation,
-      CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
-    FROM words
-    ORDER BY RANDOM()
-    LIMIT 1`,
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: 'Unable to load word.' });
-      }
+  const useSpecialFilter = specialWordRequestCount < specialWordChars.length;
+  const targetChar = specialWordChars[specialWordRequestCount] || null;
+  specialWordRequestCount += 1;
 
-      if (!row) {
-        return res.status(404).json({ error: 'No words found.' });
-      }
+  const query = useSpecialFilter && targetChar
+    ? `SELECT
+       id,
+       latin,
+       amharic,
+       translation,
+       CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
+     FROM words
+     WHERE amharic LIKE '%${targetChar}%'
+     ORDER BY RANDOM()
+     LIMIT 1`
+    : `SELECT
+       id,
+       latin,
+       amharic,
+       translation,
+       CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
+     FROM words
+     ORDER BY RANDOM()
+     LIMIT 1`;
 
-      return res.json(row);
+  db.get(query, (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load word.' });
     }
-  );
+
+    if (!row) {
+      return res.status(404).json({ error: 'No words found.' });
+    }
+
+    return res.json(row);
+  });
 });
 
 app.get('/api/words/:id/audio', wordsRateLimiter, (req, res) => {
