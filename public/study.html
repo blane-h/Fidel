@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fidel Study</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="top-nav">
+      <div class="logo" aria-label="Fidel logo">ፊደል</div>
+            <nav>
+        <a href="study.html">Study</a>
+        <a href="index.html">Spell</a>
+        <a href="draw.html">Draw</a>
+        <a href="train.html">Train</a>
+      </nav>
+    </header>
+
+    <main class="study-page">
+      <section class="study-header">
+        <button id="prevBtn" class="icon-btn arrow-btn" aria-label="Previous character">◀</button>
+        <div class="study-controls">
+          <button id="flipSettingsBtn" class="icon-btn" aria-label="Flip card settings">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M6.3 5l-1.4 1.4L12 12 4.9 19.1l1.4 1.4L12 14.6l6.7 5.9 1.4-1.4L13.4 12l6.7-5.9-1.4-1.4L12 10.4 6.3 5z"/>
+            </svg>
+          </button>
+        </div>
+        <button id="nextBtn" class="icon-btn arrow-btn" aria-label="Next character">▶</button>
+      </section>
+
+      <section class="study-status">
+        <p id="counterDisplay" class="counter-display">1 / 34</p>
+      </section>
+
+      <section class="card-section">
+        <div id="flashcard" class="flashcard">
+          <div class="flashcard-inner" id="flashcardInner">
+            <div class="flashcard-front">
+              <span id="frontText" class="card-text">-</span>
+            </div>
+            <div class="flashcard-back">
+              <span id="backText" class="card-text">-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="study-tools">
+        <button id="soundBtn" class="tool-btn" aria-label="Play pronunciation">🔊</button>
+      </section>
+    </main>
+
+    <script src="/features.js" defer></script>
+    <script src="/study.js" defer></script>
+  </body>
+</html>
