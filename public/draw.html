@@ -3,59 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fidel Study</title>
+    <title>Fidel Draw</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="top-nav">
       <div class="logo" aria-label="Fidel logo">ፊደል</div>
-                  <nav>
-        <a class="active" href="study.html">Study</a>
+      <nav>
+        <a href="study.html">Study</a>
         <a href="index.html">Spell</a>
         <a href="draw.html" class="active">Draw</a>
         <a href="train.html">Train</a>
       </nav>
     </header>
 
-    <main class="study-page">
+    <main class="draw-page">
       <section class="study-header">
-        <button id="shuffleBtn" class="shuffle-btn" aria-label="Shuffle characters">
-          <img src="/shuffle-icon.png" alt="Shuffle" width="64" height="64" />
-        </button>
         <button id="prevConsonantBtn" class="icon-btn arrow-btn" aria-label="Previous consonants">◀</button>
         <div id="consonantBoxes" class="consonant-boxes"></div>
         <button id="nextConsonantBtn" class="icon-btn arrow-btn" aria-label="Next consonants">▶</button>
       </section>
 
-      <section class="study-status">
-        <p id="completionMessage" class="completion-message" hidden></p>
-      </section>
-
-      <section class="prompt-area">
-        <button id="prevVowelBtn" class="icon-btn arrow-btn" aria-label="Previous vowel">◀</button>
-        <button id="traceBtn" class="icon-btn" aria-label="Toggle trace mode">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-          </svg>
+      <section class="draw-controls">
+        <button id="shuffleBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Shuffle characters">
+          <img src="/shuffle-icon.png" alt="Shuffle" width="48" height="48" />
         </button>
-        <div class="prompt-copy">
-          <h2 id="drawPrompt">-</h2>
-          <p id="drawHint" class="prompt-hint" hidden></p>
+        <div class="draw-word-row">
+          <button id="flipBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Flip display">
+            <img src="/flip-icon.png" alt="Flip" width="48" height="48" />
+          </button>
+          <h2 style="font-size: 80px;" id="drawPrompt">-</h2>
         </div>
-        <button id="soundBtn" class="icon-btn" aria-label="Play pronunciation">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-          </svg>
-        </button>
-        <button id="nextVowelBtn" class="icon-btn arrow-btn" aria-label="Next vowel">▶</button>
+        <div class="draw-controls-right">
+          <button id="soundBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Play pronunciation">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+          </button>
+          <button id="traceBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Toggle trace mode">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+          </button>
+        </div>
       </section>
 
       <section class="canvas-section">
+        <button id="prevVowelBtn" class="icon-btn arrow-btn canvas-arrow canvas-arrow-left" aria-label="Previous vowel">◀</button>
         <div class="drawing-frame">
           <div id="traceLayer" class="trace-layer" hidden></div>
           <canvas id="drawCanvas" width="420" height="420"></canvas>
         </div>
-        <p id="statusMessage" class="status"></p>
+        <button id="nextVowelBtn" class="icon-btn arrow-btn canvas-arrow canvas-arrow-right" aria-label="Next vowel">▶</button>
       </section>
 
       <section class="study-tools">

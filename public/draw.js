@@ -15,6 +15,7 @@ const traceLayer = document.getElementById('traceLayer');
 const soundBtn = document.getElementById('soundBtn');
 const prevVowelBtn = document.getElementById('prevVowelBtn');
 const nextVowelBtn = document.getElementById('nextVowelBtn');
+const flipBtn = document.getElementById('flipBtn');
 
 let alphabet = [];
 let consonants = [];
@@ -29,6 +30,8 @@ let currentAudio = null;
 let studyComplete = false;
 
 let shuffled = false;
+
+let showFidel = true;
 
 let strokes = [];
 
@@ -135,7 +138,7 @@ function updatePrompt() {
   clearCanvas();
   renderTrace();
 
-  drawPrompt.textContent = char.latin;
+  drawPrompt.textContent = showFidel ? char.fidel : char.latin;
   drawHint.hidden = true;
 
   if (soundBtn) {
@@ -759,6 +762,13 @@ async function playSound() {
 }
 
 soundBtn.addEventListener('click', playSound);
+
+flipBtn.addEventListener('click', () => {
+  showFidel = !showFidel;
+  if (currentCharacter) {
+    drawPrompt.textContent = showFidel ? currentCharacter.fidel : currentCharacter.latin;
+  }
+});
 
 async function loadAlphabet() {
   try {
