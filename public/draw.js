@@ -619,7 +619,7 @@ async function submitDrawing() {
   const modelResult = await checkWithModel(imageData, referenceImage);
   if (modelResult.verdict === 'match') {
     console.log('[check] model says match', modelResult.confidence);
-    statusMessage.textContent = 'Correct! Great job.';
+    statusMessage.textContent = `Correct! Great job. (model ${Math.round(modelResult.confidence * 100)}%)`;
     statusMessage.className = 'status success';
     advanceCharacter();
     return;
@@ -631,9 +631,12 @@ async function submitDrawing() {
     return;
   }
 
+  statusMessage.textContent = 'Model is unsure, checking locally...';
+  statusMessage.className = 'status checking';
+
   const local = localCompare(imageData, referenceImage);
   if (local.verdict === 'match') {
-    statusMessage.textContent = 'Correct! Great job.';
+    statusMessage.textContent = 'Correct! Great job. (local compare)';
     statusMessage.className = 'status success';
     advanceCharacter();
     return;
@@ -644,7 +647,7 @@ async function submitDrawing() {
     return;
   }
 
-  statusMessage.textContent = 'Checking your drawing...';
+  statusMessage.textContent = 'Local check is unsure, checking with Gemini...';
   statusMessage.className = 'status checking';
 
   try {
@@ -673,7 +676,7 @@ async function submitDrawing() {
     const data = await response.json();
 
     if (data.match) {
-      statusMessage.textContent = 'Correct! Great job.';
+      statusMessage.textContent = 'Correct! Great job. (Gemini)';
       statusMessage.className = 'status success';
       advanceCharacter();
     } else {
