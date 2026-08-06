@@ -3,34 +3,43 @@ const ctx = drawCanvas.getContext('2d');
 const drawPrompt = document.getElementById('drawPrompt');
 const drawHint = document.getElementById('drawHint');
 const statusMessage = document.getElementById('statusMessage');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const swapBtn = document.getElementById('swapBtn');
-const soundBtn = document.getElementById('soundBtn');
-const traceBtn = document.getElementById('traceBtn');
+const prevConsonantBtn = document.getElementById('prevConsonantBtn');
+const nextConsonantBtn = document.getElementById('nextConsonantBtn');
+const consonantBoxes = document.getElementById('consonantBoxes');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const completionMessage = document.getElementById('completionMessage');
 const clearBtn = document.getElementById('clearBtn');
 const enterBtn = document.getElementById('enterBtn');
+const traceBtn = document.getElementById('traceBtn');
 const traceLayer = document.getElementById('traceLayer');
+const soundBtn = document.getElementById('soundBtn');
+const prevVowelBtn = document.getElementById('prevVowelBtn');
+const nextVowelBtn = document.getElementById('nextVowelBtn');
 
+let alphabet = [];
+let consonants = [];
+let currentConsonantIndex = 0;
+let currentVowelIndex = 0;
 let currentCharacter = null;
-let showFidelSpelling = false;
 let traceMode = false;
 let isDrawing = false;
 let lastPoint = null;
 let currentAudio = null;
-let currentCharacterBank = [];
 
-// Stroke tracking for validating the drawing before submission.
+let studyComplete = false;
+
+let shuffled = false;
+
 let strokes = [];
 
-// Minimum ink coverage (as a fraction of total canvas pixels) required.
 const MIN_INK_COVERAGE = 0.02;
-// A stroke is considered "straight" if its points stay within this band of the bounding box.
 const STRAIGHT_BAND_RATIO = 0.12;
-// Minimum bounding-box size (relative to canvas) before a drawing is considered a real attempt.
 const MIN_BBOX_RATIO = 0.15;
 
-// Canvas drawing state
+const PAGE_SIZE = 8;
+const PAGE_SIZES = [PAGE_SIZE, PAGE_SIZE, 9, 9];
+const TOTAL_PAGES = PAGE_SIZES.length;
+
 function getCanvasPoint(event) {
   const rect = drawCanvas.getBoundingClientRect();
   const scaleX = drawCanvas.width / rect.width;
@@ -90,7 +99,6 @@ drawCanvas.addEventListener('touchstart', startDrawing, { passive: false });
 drawCanvas.addEventListener('touchmove', drawStroke, { passive: false });
 drawCanvas.addEventListener('touchend', stopDrawing);
 
-// Trace mode
 function renderTrace() {
   if (traceMode && currentCharacter) {
     traceLayer.textContent = currentCharacter.fidel;
@@ -106,71 +114,148 @@ traceBtn.addEventListener('click', () => {
   renderTrace();
 });
 
-// Prompt display toggling
-function renderPrompt() {
-  if (!currentCharacter) {
+function getCurrentCharacter() {
+  if (!consonants[currentConsonantIndex]) {
+    return null;
+  }
+  const family = consonants[currentConsonantIndex];
+  if (!family || !family.vowels[currentVowelIndex]) {
+    return null;
+  }
+  return family.vowels[currentVowelIndex];
+}
+
+function updatePrompt() {
+  const char = getCurrentCharacter();
+  if (!char) {
     return;
   }
 
-  if (showFidelSpelling) {
-    drawPrompt.textContent = currentCharacter.fidel;
-    drawHint.textContent = `Latin: ${currentCharacter.latin}`;
-    drawHint.hidden = false;
-  } else {
-    drawPrompt.textContent = currentCharacter.latin;
-    drawHint.textContent = 'Draw the matching fidel';
-    drawHint.hidden = false;
-  }
-}
-
-prevBtn.addEventListener('click', () => {
-  showFidelSpelling = !showFidelSpelling;
-  renderPrompt();
-});
-
-swapBtn.addEventListener('click', () => {
-  showFidelSpelling = !showFidelSpelling;
-  renderPrompt();
-});
-
-nextBtn.addEventListener('click', () => {
-  if (currentCharacterBank.length > 0) {
-    const nextChar = currentCharacterBank[Math.floor(Math.random() * currentCharacterBank.length)];
-    loadCharacter(nextChar);
-  } else {
-    loadRandomCharacter();
-  }
-});
-
-// Sound playback
-async function playSound() {
-  if (!currentCharacter) {
-    return;
-  }
-
-  const textToSpeak = showFidelSpelling ? currentCharacter.fidel : currentCharacter.latin;
-  try {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = 'am-ET';
-      window.speechSynthesis.speak(utterance);
-    }
-  } catch (_error) {
-    // Speech synthesis may not be available; ignore.
-  }
-}
-
-soundBtn.addEventListener('click', playSound);
-
-// Clear
-clearBtn.addEventListener('click', () => {
+  currentCharacter = char;
   clearCanvas();
-  statusMessage.textContent = '';
-  statusMessage.className = 'status';
-});
+  renderTrace();
 
-// Drawing validation helpers
+  drawPrompt.textContent = char.latin;
+  drawHint.hidden = true;
+
+  if (soundBtn) {
+    playSound();
+  }
+}
+
+function getPageSize(pageIndex) {
+  return PAGE_SIZES[pageIndex] || PAGE_SIZE;
+}
+
+function getCurrentPage() {
+  let accumulated = 0;
+  for (let i = 0; i < TOTAL_PAGES; i++) {
+    accumulated += PAGE_SIZES[i];
+    if (currentConsonantIndex < accumulated) {
+      return i;
+    }
+  }
+  return TOTAL_PAGES - 1;
+}
+
+function getPageStart(pageIndex) {
+  let start = 0;
+  for (let i = 0; i < pageIndex; i++) {
+    start += PAGE_SIZES[i];
+  }
+  return start;
+}
+
+function renderConsonantBoxes() {
+  consonantBoxes.innerHTML = '';
+  const pageIndex = getCurrentPage();
+  const pageSize = getPageSize(pageIndex);
+  const start = getPageStart(pageIndex);
+  const end = Math.min(start + pageSize, consonants.length);
+
+  for (let i = start; i < end; i++) {
+    const box = document.createElement('div');
+    box.className = 'consonant-box';
+    if (!shuffled && i === currentConsonantIndex) {
+      box.classList.add('active');
+    }
+    box.textContent = consonants[i].latin;
+    box.addEventListener('click', () => {
+      currentConsonantIndex = i;
+      currentVowelIndex = 0;
+      shuffled = false;
+      renderConsonantBoxes();
+      updatePrompt();
+    });
+    consonantBoxes.appendChild(box);
+  }
+
+  prevConsonantBtn.disabled = consonants.length === 0;
+  nextConsonantBtn.disabled = consonants.length === 0;
+}
+
+function advancePage(delta) {
+  const pageIndex = getCurrentPage();
+  let newPage = pageIndex + delta;
+
+  if (newPage < 0) {
+    newPage = TOTAL_PAGES - 1;
+  } else if (newPage >= TOTAL_PAGES) {
+    newPage = 0;
+  }
+
+  const newStart = getPageStart(newPage);
+  currentConsonantIndex = Math.min(newStart, consonants.length - 1);
+  currentVowelIndex = 0;
+  renderConsonantBoxes();
+  updatePrompt();
+}
+
+function advanceVowel(delta) {
+  if (!consonants[currentConsonantIndex]) {
+    return;
+  }
+
+  const family = consonants[currentConsonantIndex];
+  currentVowelIndex += delta;
+
+  if (currentVowelIndex < 0) {
+    currentVowelIndex = family.vowels.length - 1;
+  } else if (currentVowelIndex >= family.vowels.length) {
+    currentVowelIndex = 0;
+  }
+
+  updatePrompt();
+}
+
+function advanceCharacter() {
+  currentVowelIndex += 1;
+
+  if (currentVowelIndex >= 7) {
+    currentVowelIndex = 0;
+    currentConsonantIndex += 1;
+
+    if (currentConsonantIndex >= consonants.length) {
+      studyComplete = true;
+      showCompletion();
+      return;
+    }
+  }
+
+  renderConsonantBoxes();
+  updatePrompt();
+}
+
+function showCompletion() {
+  completionMessage.textContent = 'You have finished studying all fidel characters!';
+  completionMessage.hidden = false;
+  currentCharacter = null;
+  clearCanvas();
+  traceLayer.hidden = true;
+  drawPrompt.textContent = '-';
+  drawHint.hidden = true;
+}
+
 function validateDrawing() {
   const canvasWidth = drawCanvas.width;
   const canvasHeight = drawCanvas.height;
@@ -204,12 +289,10 @@ function validateDrawing() {
   const totalPixels = canvasWidth * canvasHeight;
   const coverage = inkedPixels / totalPixels;
 
-  // Blank or nearly empty canvas.
   if (coverage < MIN_INK_COVERAGE) {
     return { valid: false, reason: 'Your drawing is blank or too faint. Please draw the character.' };
   }
 
-  // Ink confined to a tiny region (dot or small scribble).
   const bboxWidth = maxX - minX + 1;
   const bboxHeight = maxY - minY + 1;
   const bboxRatio = Math.min(bboxWidth / canvasWidth, bboxHeight / canvasHeight);
@@ -217,7 +300,6 @@ function validateDrawing() {
     return { valid: false, reason: 'Your drawing is too small to recognize. Please draw larger.' };
   }
 
-  // A single nearly-straight stroke is not a genuine attempt at a fidel.
   if (strokes.length === 1) {
     const stroke = strokes[0];
     if (stroke.length >= 3) {
@@ -243,8 +325,6 @@ function validateDrawing() {
   return { valid: true };
 }
 
-// ---- Local fast-path: compare the drawing against the reference glyph ----
-// This avoids calling Gemini for obvious correct/wrong drawings, saving quota.
 const compareCanvas = document.createElement('canvas');
 const compareCtx = compareCanvas.getContext('2d');
 const COMPARE_SIZE = 64;
@@ -258,7 +338,6 @@ function inkPixelAt(data, width, x, y) {
   return alpha > 60 && r < 200 && g < 200 && b < 200;
 }
 
-// Downscale a data URL to a small binary grid of ink / blank pixels.
 function toBinaryGrid(dataUrl) {
   const img = new Image();
   img.src = dataUrl;
@@ -278,10 +357,6 @@ function toBinaryGrid(dataUrl) {
   return grid;
 }
 
-// Normalize a binary grid so its ink is centered and scaled to a fixed size.
-// This makes the comparison invariant to the drawing's position and overall size,
-// which is important because a correct handwriting attempt may be off-center or
-// drawn larger/smaller than the font-rendered reference glyph.
 function normalizeGrid(grid) {
   const size = COMPARE_SIZE;
   let minX = size;
@@ -306,8 +381,6 @@ function normalizeGrid(grid) {
 
   const inkW = maxX - minX + 1;
   const inkH = maxY - minY + 1;
-  // Scale the ink bounding box to fill a fixed inner box (e.g. 80% of the grid),
-  // keeping aspect ratio, then center it.
   const target = Math.round(size * 0.8);
   const scale = Math.min(target / inkW, target / inkH);
   const scaledW = Math.max(1, Math.round(inkW * scale));
@@ -329,9 +402,6 @@ function normalizeGrid(grid) {
   return normalized;
 }
 
-// Grow the ink in a grid by one pixel in all 8 directions. Used on the reference
-// glyph so a slightly thicker or marginally offset stroke still overlaps, which
-// accommodates normal nib thickness and minor pen wobble.
 function dilate(grid, radius = 1) {
   const size = COMPARE_SIZE;
   const out = new Uint8Array(size * size);
@@ -353,11 +423,6 @@ function dilate(grid, radius = 1) {
   return out;
 }
 
-// Compute the Euclidean distance of every pixel to the nearest ink pixel using a
-// two-pass chamfer (distance transform). Ink pixels are 0; blank pixels climb as
-// they move away from the shape. This lets us measure how close each drawing pixel
-// is to the reference shape, which is tolerant of wobble, uneven thickness, and
-// minor offset while still capturing the overall shape.
 function distanceTransform(grid) {
   const size = COMPARE_SIZE;
   const dist = new Float32Array(size * size);
@@ -367,13 +432,10 @@ function distanceTransform(grid) {
     dist[i] = grid[i] === 1 ? 0 : INF;
   }
 
-  // Forward pass.
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const idx = y * size + x;
-      if (dist[idx] === 0) {
-        continue;
-      }
+      if (dist[idx] === 0) continue;
       if (y > 0) dist[idx] = Math.min(dist[idx], dist[idx - size] + 1);
       if (x > 0) dist[idx] = Math.min(dist[idx], dist[idx - 1] + 1);
       if (y > 0 && x > 0) dist[idx] = Math.min(dist[idx], dist[idx - size - 1] + 1.4142);
@@ -381,7 +443,6 @@ function distanceTransform(grid) {
     }
   }
 
-  // Backward pass.
   for (let y = size - 1; y >= 0; y -= 1) {
     for (let x = size - 1; x >= 0; x -= 1) {
       const idx = y * size + x;
@@ -395,15 +456,10 @@ function distanceTransform(grid) {
   return dist;
 }
 
-// Shape similarity based on Chamfer distance. For each drawing ink pixel, look up
-// how far it is from the reference shape; pixels within a small tolerance count as
-// "covered". Returns the fraction of drawing ink that lies close to the reference.
-// This is tolerant of pen wobble and uneven stroke thickness while still requiring
-// the drawing to occupy the same shape as the reference.
 function distanceSimilarity(drawing, reference) {
   const size = COMPARE_SIZE;
   const dist = distanceTransform(reference);
-  const DIST_TOLERANCE = 2.5; // pixels of tolerated deviation from the reference shape
+  const DIST_TOLERANCE = 2.5;
   let covered = 0;
   let total = 0;
 
@@ -422,7 +478,6 @@ function distanceSimilarity(drawing, reference) {
   return covered / total;
 }
 
-// Simple normalized XOR similarity between two binary grids.
 function binarySimilarity(a, b) {
   const size = COMPARE_SIZE;
   let same = 0;
@@ -439,48 +494,30 @@ function binarySimilarity(a, b) {
   return same / total;
 }
 
-// Thresholds tuned so we only short-circuit on confident cases.
-// Matches are accepted when EITHER the pixel overlap is high OR the shape distance
-// similarity is high. This makes the local path lenient on penmanship (wobble,
-// uneven thickness, minor offset) while still requiring the relative shape to be
-// correct.
-const HIGH_MATCH_THRESHOLD = 0.55; // normalized pixel-overlap similarity
-const HIGH_SHAPE_THRESHOLD = 0.75; // Chamfer distance-based shape similarity
-// Low thresholds kept very conservative: only obviously-wrong drawings (scribbles,
-// clearly different glyphs) are rejected locally. Correct-but-imperfect handwriting
-// that falls between the thresholds is sent to Gemini for a real judgment.
+const HIGH_MATCH_THRESHOLD = 0.55;
+const HIGH_SHAPE_THRESHOLD = 0.75;
 const LOW_MATCH_THRESHOLD = 0.18;
 const LOW_SHAPE_THRESHOLD = 0.40;
 
-// Returns 'match' | 'no-match' | null (null = ambiguous, call Gemini).
 function localCompare(drawingDataUrl, referenceDataUrl) {
   const rawDrawing = toBinaryGrid(drawingDataUrl);
   const rawReference = toBinaryGrid(referenceDataUrl);
-  // Normalize both so position/size differences don't unfairly penalize the drawing.
   const drawing = normalizeGrid(rawDrawing);
   const reference = normalizeGrid(rawReference);
-  // Dilate BOTH the drawing and the reference so a slightly thinner/thicker stroke
-  // or minor pen wobble still overlaps the reference shape. This is fair to normal
-  // handwriting and avoids rejecting correct shapes because of stroke thickness.
   const dilatedDrawing = dilate(drawing, 1);
   const dilatedReference = dilate(reference, 1);
   const overlap = binarySimilarity(dilatedDrawing, dilatedReference);
   const shape = distanceSimilarity(dilatedDrawing, dilatedReference);
-  // Log the scores to help tune thresholds in the browser console.
   console.log(`[localCompare] overlap=${overlap.toFixed(3)} shape=${shape.toFixed(3)}`);
-  // Accept when either metric confidently indicates the relative shape matches.
   if (overlap >= HIGH_MATCH_THRESHOLD || shape >= HIGH_SHAPE_THRESHOLD) {
     return { verdict: 'match', overlap, shape };
   }
-  // Reject only when BOTH metrics are clearly low (obviously a different shape).
   if (overlap <= LOW_MATCH_THRESHOLD && shape <= LOW_SHAPE_THRESHOLD) {
     return { verdict: 'no-match', overlap, shape };
   }
   return { verdict: null, overlap, shape };
 }
 
-// Render the expected fidel onto an offscreen canvas so Gemini can visually
-// compare the user's drawing against the correct shape.
 function renderReferenceImage() {
   if (!currentCharacter) {
     return null;
@@ -499,7 +536,6 @@ function renderReferenceImage() {
   return canvas.toDataURL('image/png');
 }
 
-// Downscale an image data URL to a smaller size to reduce API payload size.
 function downscaleDataUrl(dataUrl, maxSize = 256) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -519,13 +555,9 @@ function downscaleDataUrl(dataUrl, maxSize = 256) {
   });
 }
 
-// Simple cooldown to prevent rapid duplicate submissions / spamming.
 let lastSubmitTime = 0;
 const SUBMIT_COOLDOWN_MS = 1200;
 
-// Try the trained model first via /api/draw/check.
-// Returns { verdict: 'match'|'no-match'|null } where null means "ambiguous /
-// no model" and the caller should fall back to Gemini.
 async function checkWithModel(imageData, referenceImage) {
   try {
     let features = null;
@@ -563,9 +595,8 @@ async function checkWithModel(imageData, referenceImage) {
   }
 }
 
-// Enter - submit for checking (model first, then legacy local+Gemini fallback)
 async function submitDrawing() {
-  if (!currentCharacter) {
+  if (!currentCharacter || studyComplete) {
     return;
   }
 
@@ -585,12 +616,12 @@ async function submitDrawing() {
   const imageData = drawCanvas.toDataURL('image/png');
   const referenceImage = renderReferenceImage();
 
-  // Step 1: try the trained model.
   const modelResult = await checkWithModel(imageData, referenceImage);
   if (modelResult.verdict === 'match') {
     console.log('[check] model says match', modelResult.confidence);
     statusMessage.textContent = 'Correct! Great job.';
     statusMessage.className = 'status success';
+    advanceCharacter();
     return;
   }
   if (modelResult.verdict === 'no-match') {
@@ -600,11 +631,11 @@ async function submitDrawing() {
     return;
   }
 
-  // Step 2 (fallback): local fast-path for obvious cases without Gemini.
   const local = localCompare(imageData, referenceImage);
   if (local.verdict === 'match') {
     statusMessage.textContent = 'Correct! Great job.';
     statusMessage.className = 'status success';
+    advanceCharacter();
     return;
   }
   if (local.verdict === 'no-match') {
@@ -617,7 +648,6 @@ async function submitDrawing() {
   statusMessage.className = 'status checking';
 
   try {
-    // Downscale images to reduce payload size before sending to the server.
     const [smallImage, smallReference] = await Promise.all([
       downscaleDataUrl(imageData),
       downscaleDataUrl(referenceImage)
@@ -645,7 +675,7 @@ async function submitDrawing() {
     if (data.match) {
       statusMessage.textContent = 'Correct! Great job.';
       statusMessage.className = 'status success';
-      // Keep current character until user presses Next, but allow retry.
+      advanceCharacter();
     } else {
       statusMessage.textContent = 'Not quite. Try again.';
       statusMessage.className = 'status error';
@@ -658,57 +688,91 @@ async function submitDrawing() {
 
 enterBtn.addEventListener('click', submitDrawing);
 
-// Load character functions
-function loadCharacter(char) {
-  currentCharacter = char;
+clearBtn.addEventListener('click', () => {
   clearCanvas();
-  showFidelSpelling = false;
-  traceMode = false;
-  traceBtn.classList.remove('active');
-  renderTrace();
-  renderPrompt();
   statusMessage.textContent = '';
   statusMessage.className = 'status';
+});
+
+prevConsonantBtn.addEventListener('click', () => {
+  shuffled = false;
+  advancePage(-1);
+});
+
+nextConsonantBtn.addEventListener('click', () => {
+  shuffled = false;
+  advancePage(1);
+});
+
+prevVowelBtn.addEventListener('click', () => {
+  shuffled = false;
+  advanceVowel(-1);
+});
+
+nextVowelBtn.addEventListener('click', () => {
+  shuffled = false;
+  advanceVowel(1);
+});
+
+shuffleBtn.addEventListener('click', () => {
+  const allChars = [];
+  consonants.forEach((family, familyIndex) => {
+    family.vowels.forEach((vowel, vowelIndex) => {
+      allChars.push({ ...vowel, consonant: family.consonant, family, familyIndex, vowelIndex });
+    });
+  });
+
+  if (allChars.length === 0) {
+    return;
+  }
+
+  const randomChar = allChars[Math.floor(Math.random() * allChars.length)];
+  
+  currentConsonantIndex = randomChar.familyIndex;
+  currentVowelIndex = randomChar.vowelIndex;
+  shuffled = true;
+  
+  renderConsonantBoxes();
+  updatePrompt();
+});
+
+async function playSound() {
+  if (!currentCharacter) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/characters/audio?fidel=${encodeURIComponent(currentCharacter.fidel)}`);
+    if (!response.ok) {
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.play();
+  } catch (_error) {
+    // ignore
+  }
 }
 
-async function loadRandomCharacter() {
+soundBtn.addEventListener('click', playSound);
+
+async function loadAlphabet() {
   try {
-    const response = await fetch('/api/draw/random');
-    const char = await response.json();
-    loadCharacter(char);
+    const response = await fetch('/api/alphabet');
+    const data = await response.json();
+    alphabet = data;
+    consonants = [...data];
   } catch (_error) {
-    statusMessage.textContent = 'Failed to load character.';
+    statusMessage.textContent = 'Failed to load alphabet.';
     statusMessage.className = 'status error';
   }
 }
 
-// Load full character bank for "next" navigation
-async function loadCharacterBank() {
-  try {
-    const response = await fetch('/api/alphabet');
-    const alphabet = await response.json();
-    const chars = [];
-    alphabet.forEach((family) => {
-      family.vowels.forEach((vowel) => {
-        chars.push({ fidel: vowel.fidel, latin: vowel.latin });
-      });
-    });
-    currentCharacterBank = chars;
-  } catch (_error) {
-    currentCharacterBank = [];
-  }
-}
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    submitDrawing();
-  }
-});
-
 async function init() {
-  await loadCharacterBank();
-  await loadRandomCharacter();
+  await loadAlphabet();
+  renderConsonantBoxes();
+  updatePrompt();
 }
 
 init();

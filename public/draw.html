@@ -3,30 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fidel Draw</title>
+    <title>Fidel Study</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="top-nav">
       <div class="logo" aria-label="Fidel logo">ፊደል</div>
       <nav>
-        <a href="#">Study</a>
         <a href="index.html">Spell</a>
         <a class="active" href="draw.html">Draw</a>
         <a href="train.html">Train</a>
       </nav>
     </header>
 
-    <main class="draw-page">
+    <main class="study-page">
+      <section class="study-header">
+        <button id="shuffleBtn" class="shuffle-btn" aria-label="Shuffle characters">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+            <path d="M10.59 9.17L5.43 4.12l1.41-1.41L13 9.17V3h-2l5 5-5 5h2v5.17l-5.66-5.66-1.41 1.41L10.59 14.3l6.17-6.17-1.41-1.41z"/>
+            <path d="M15.59 14.83L20.76 19.88l-1.41 1.41-5.17-5.17v5.17h2l-5-5 5-5h-2v-5.17l5.66 5.66 1.41-1.41-6.17-6.17 6.17-6.17-1.41-1.41z"/>
+          </svg>
+        </button>
+        <button id="prevConsonantBtn" class="icon-btn arrow-btn" aria-label="Previous consonants">◀</button>
+        <div id="consonantBoxes" class="consonant-boxes"></div>
+        <button id="nextConsonantBtn" class="icon-btn arrow-btn" aria-label="Next consonants">▶</button>
+      </section>
+
+      <section class="study-status">
+        <p id="completionMessage" class="completion-message" hidden></p>
+      </section>
+
       <section class="prompt-area">
-        <button id="swapBtn" class="icon-btn arrow-btn" aria-label="Toggle fidel and latin">⇄</button>
-        <button id="prevBtn" class="icon-btn arrow-btn" aria-label="Previous character">◀</button>
+        <button id="prevVowelBtn" class="icon-btn arrow-btn" aria-label="Previous vowel">◀</button>
+        <button id="traceBtn" class="icon-btn" aria-label="Toggle trace mode">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
+        </button>
         <div class="prompt-copy">
-          <h2 id="drawPrompt">fidel</h2>
+          <h2 id="drawPrompt">-</h2>
           <p id="drawHint" class="prompt-hint" hidden></p>
         </div>
-        <button id="nextBtn" class="icon-btn arrow-btn" aria-label="Next character">▶</button>
         <button id="soundBtn" class="icon-btn" aria-label="Play pronunciation">🔊</button>
+        <button id="nextVowelBtn" class="icon-btn arrow-btn" aria-label="Next vowel">▶</button>
       </section>
 
       <section class="canvas-section">
@@ -37,8 +56,7 @@
         <p id="statusMessage" class="status"></p>
       </section>
 
-      <section class="draw-tools">
-        <button id="traceBtn" class="tool-btn" aria-label="Trace mode">✏️</button>
+      <section class="study-tools">
         <button id="clearBtn" class="tool-btn" aria-label="Clear drawing">Clear</button>
         <button id="enterBtn" class="tool-btn primary" aria-label="Submit drawing">Enter</button>
       </section>

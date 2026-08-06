@@ -91,14 +91,14 @@ async function generateWithGemini(parts) {
 
 const vowelSuffixes = ['a', 'u', 'i', 'a', 'e', 'e', 'o'];
 const latinFamilies = [
-  'ha', 'ha', 'la', 'ma', 'sa', 'ra', 'sa', 'sha', 'qa', 'ba', 'va', 'ta', 'cha', 'xa', 'na', 'nya',
-  'a', 'ka', 'xa', 'wa', 'a', 'za', 'za', 'ya', 'da', 'ja', 'ga', 'ta', 'cha', 'pa', 'sa', 'sa', 'fa', 'pa'
+  'ha', 'la', 'ha', 'ma', 'sa', 'ra', 'sa', 'sha', 'qa', 'ba', 'ta', 'cha', 'ha', 'na', 'nya',
+  'a', 'ka', 'kha', 'wa', 'a', 'za', 'zha', 'ya', 'da', 'ja', 'ga', 'ta', 'cha', 'pa', 'sa', 'sa', 'fa', 'pa', 'va'
 ];
 
 const consonantFamilies = [
   ['ሀ', 'ሁ', 'ሂ', 'ሃ', 'ሄ', 'ህ', 'ሆ'],
-  ['ሐ', 'ሑ', 'ሒ', 'ሓ', 'ሔ', 'ሕ', 'ሖ'],
   ['ለ', 'ሉ', 'ሊ', 'ላ', 'ሌ', 'ል', 'ሎ'],
+  ['ሐ', 'ሑ', 'ሒ', 'ሓ', 'ሔ', 'ሕ', 'ሖ'],
   ['መ', 'ሙ', 'ሚ', 'ማ', 'ሜ', 'ም', 'ሞ'],
   ['ሠ', 'ሡ', 'ሢ', 'ሣ', 'ሤ', 'ሥ', 'ሦ'],
   ['ረ', 'ሩ', 'ሪ', 'ራ', 'ሬ', 'ር', 'ሮ'],
@@ -106,7 +106,6 @@ const consonantFamilies = [
   ['ሸ', 'ሹ', 'ሺ', 'ሻ', 'ሼ', 'ሽ', 'ሾ'],
   ['ቀ', 'ቁ', 'ቂ', 'ቃ', 'ቄ', 'ቅ', 'ቆ'],
   ['በ', 'ቡ', 'ቢ', 'ባ', 'ቤ', 'ብ', 'ቦ'],
-  ['ቨ', 'ቩ', 'ቪ', 'ቫ', 'ቬ', 'ቭ', 'ቮ'],
   ['ተ', 'ቱ', 'ቲ', 'ታ', 'ቴ', 'ት', 'ቶ'],
   ['ቸ', 'ቹ', 'ቺ', 'ቻ', 'ቼ', 'ች', 'ቾ'],
   ['ኀ', 'ኁ', 'ኂ', 'ኃ', 'ኄ', 'ኅ', 'ኆ'],
@@ -129,7 +128,8 @@ const consonantFamilies = [
   ['ጸ', 'ጹ', 'ጺ', 'ጻ', 'ጼ', 'ጽ', 'ጾ'],
   ['ፀ', 'ፁ', 'ፂ', 'ፃ', 'ፄ', 'ፅ', 'ፆ'],
   ['ፈ', 'ፉ', 'ፊ', 'ፋ', 'ፌ', 'ፍ', 'ፎ'],
-  ['ፐ', 'ፑ', 'ፒ', 'ፓ', 'ፔ', 'ፕ', 'ፖ']
+  ['ፐ', 'ፑ', 'ፒ', 'ፓ', 'ፔ', 'ፕ', 'ፖ'],
+  ['ቨ', 'ቩ', 'ቪ', 'ቫ', 'ቬ', 'ቭ', 'ቮ']
 ];
 
 const dbPath = path.join(__dirname, 'fidel.db');
@@ -510,6 +510,7 @@ app.get('/api/alphabet', (_req, res) => {
       const baseLatin = latinFamilies[familyIndex] || 'a';
       return {
         consonant: family[0],
+        latin: baseLatin,
         vowels: family.map((fidel, vowelIndex) => {
           const vowelSuffix = vowelSuffixes[vowelIndex] || '';
           return {
@@ -590,6 +591,34 @@ app.get('/api/words/:id/audio', wordsRateLimiter, (req, res) => {
       }
     }
   );
+});
+
+app.get('/api/characters/audio', wordsRateLimiter, (req, res) => {
+  const fidel = String(req.query.fidel || '').trim();
+  if (!fidel) {
+    return res.status(400).json({ error: 'Missing fidel.' });
+  }
+
+  const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=am-ET&q=${encodeURIComponent(fidel)}`;
+
+  fetch(audioUrl, {
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Pronunciation request failed: ${response.status}`);
+      }
+      return response.arrayBuffer().then((arrayBuffer) => {
+        const buffer = Buffer.from(arrayBuffer);
+        const contentType = response.headers.get('content-type') || 'audio/mpeg';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.send(buffer);
+      });
+    })
+    .catch(() => {
+      res.status(404).json({ error: 'Pronunciation not available.' });
+    });
 });
 
 app.get('/api/draw/random', (_req, res) => {
