@@ -33,9 +33,12 @@
           </svg>
         </button>
       </section>
-      <section class="answer-area">
-        <div id="answerSlots" class="answer-slots"></div>
-        <p id="statusMessage" class="status"></p>
+      <section class="answer-area-with-action">
+        <div class="answer-area-main">
+          <div id="answerSlots" class="answer-slots"></div>
+          <p id="statusMessage" class="status"></p>
+        </div>
+        <button id="newWordBtn" class="new-word-side-btn" type="button">New Word</button>
       </section>
       <section class="keyboard-section">
         <div id="consonantGrid" class="consonant-grid"></div>
@@ -44,10 +47,6 @@
           <div id="vowelRow" class="vowel-row"></div>
           <button id="enterBtn" class="action-btn" type="button" aria-label="Enter">↩</button>
         </div>
-      </section>
-      <section class="footer-actions">
-        <button id="clearBtn" class="small-btn">Clear</button>
-        <button id="newWordBtn" class="small-btn">New Word</button>
       </section>
     </main>
 

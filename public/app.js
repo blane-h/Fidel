@@ -9,7 +9,6 @@ const translateBtn = document.getElementById('translateBtn');
 const soundBtn = document.getElementById('soundBtn');
 const backspaceBtn = document.getElementById('backspaceBtn');
 const enterBtn = document.getElementById('enterBtn');
-const clearBtn = document.getElementById('clearBtn');
 const newWordBtn = document.getElementById('newWordBtn');
 
 let alphabet = [];
@@ -375,13 +374,6 @@ soundBtn.addEventListener('click', async () => {
       window.speechSynthesis.speak(utterance);
     }
   }
-});
-
-clearBtn.addEventListener('click', () => {
-  answer = [];
-  renderSlots();
-  statusMessage.textContent = '';
-  statusMessage.className = 'status';
 });
 
 backspaceBtn.addEventListener('click', removeCharacter);
