@@ -9,10 +9,10 @@
   <body>
     <header class="top-nav">
       <div class="logo" aria-label="Fidel logo">ፊደል</div>
-            <nav>
-        <a href="study.html">Study</a>
+                  <nav>
+        <a class="active" href="study.html">Study</a>
         <a href="index.html">Spell</a>
-        <a href="draw.html">Draw</a>
+        <a href="draw.html" class="active">Draw</a>
         <a href="train.html">Train</a>
       </nav>
     </header>
@@ -20,10 +20,7 @@
     <main class="study-page">
       <section class="study-header">
         <button id="shuffleBtn" class="shuffle-btn" aria-label="Shuffle characters">
-          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-            <path d="M10.59 9.17L5.43 4.12l1.41-1.41L13 9.17V3h-2l5 5-5 5h2v5.17l-5.66-5.66-1.41 1.41L10.59 14.3l6.17-6.17-1.41-1.41z"/>
-            <path d="M15.59 14.83L20.76 19.88l-1.41 1.41-5.17-5.17v5.17h2l-5-5 5-5h-2v-5.17l5.66 5.66 1.41-1.41-6.17-6.17 6.17-6.17-1.41-1.41z"/>
-          </svg>
+          <img src="/shuffle-icon.png" alt="Shuffle" width="64" height="64" />
         </button>
         <button id="prevConsonantBtn" class="icon-btn arrow-btn" aria-label="Previous consonants">◀</button>
         <div id="consonantBoxes" class="consonant-boxes"></div>
@@ -45,7 +42,11 @@
           <h2 id="drawPrompt">-</h2>
           <p id="drawHint" class="prompt-hint" hidden></p>
         </div>
-        <button id="soundBtn" class="icon-btn" aria-label="Play pronunciation">🔊</button>
+        <button id="soundBtn" class="icon-btn" aria-label="Play pronunciation">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </button>
         <button id="nextVowelBtn" class="icon-btn arrow-btn" aria-label="Next vowel">▶</button>
       </section>
 

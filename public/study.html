@@ -9,8 +9,8 @@
   <body>
     <header class="top-nav">
       <div class="logo" aria-label="Fidel logo">ፊደል</div>
-            <nav>
-        <a href="study.html">Study</a>
+      <nav>
+        <a class="active" href="study.html">Study</a>
         <a href="index.html">Spell</a>
         <a href="draw.html">Draw</a>
         <a href="train.html">Train</a>
@@ -19,22 +19,32 @@
 
     <main class="study-page">
       <section class="study-header">
-        <button id="prevBtn" class="icon-btn arrow-btn" aria-label="Previous character">◀</button>
-        <div class="study-controls">
-          <button id="flipSettingsBtn" class="icon-btn" aria-label="Flip card settings">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-              <path d="M6.3 5l-1.4 1.4L12 12 4.9 19.1l1.4 1.4L12 14.6l6.7 5.9 1.4-1.4L13.4 12l6.7-5.9-1.4-1.4L12 10.4 6.3 5z"/>
-            </svg>
-          </button>
-        </div>
-        <button id="nextBtn" class="icon-btn arrow-btn" aria-label="Next character">▶</button>
+        <button id="prevConsonantBtn" class="icon-btn arrow-btn" aria-label="Previous consonants">◀</button>
+        <div id="consonantBoxes" class="consonant-boxes"></div>
+        <button id="nextConsonantBtn" class="icon-btn arrow-btn" aria-label="Next consonants">▶</button>
       </section>
 
-      <section class="study-status">
-        <p id="counterDisplay" class="counter-display">1 / 34</p>
+      <section class="study-controls">
+        <button id="cycleBtn" class="icon-btn control-btn" aria-label="Cycle">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+          </svg>
+        </button>
+        <button id="flipBtn" class="icon-btn control-btn" aria-label="Flip card">
+          <img src="/flip-icon.png" alt="Flip" width="28" height="28" />
+        </button>
+        <button id="soundBtn" class="icon-btn control-btn" aria-label="Play pronunciation">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </button>
+        <button id="shuffleBtn" class="icon-btn control-btn" aria-label="Shuffle cards">
+          <img src="/shuffle-icon.png" alt="Shuffle" width="28" height="28" />
+        </button>
       </section>
 
       <section class="card-section">
+        <button id="backBtn" class="card-nav-btn" aria-label="Back">Back</button>
         <div id="flashcard" class="flashcard">
           <div class="flashcard-inner" id="flashcardInner">
             <div class="flashcard-front">
@@ -45,10 +55,7 @@
             </div>
           </div>
         </div>
-      </section>
-
-      <section class="study-tools">
-        <button id="soundBtn" class="tool-btn" aria-label="Play pronunciation">🔊</button>
+        <button id="nextBtn" class="card-nav-btn" aria-label="Next">Next</button>
       </section>
     </main>
 
