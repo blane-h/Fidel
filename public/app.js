@@ -253,7 +253,7 @@ function renderVowels(index) {
           activeConsonantBtn.classList.remove('active');
           activeConsonantBtn = null;
         }
-        advanceToNextConsonantIfDone();
+        advanceToNextStep();
       } else {
         addCharacter(char.fidel);
       }
@@ -286,14 +286,20 @@ function renderKeyboardRow(keys, rowTop, rowLeftOffset) {
       const idx = alphabet.findIndex((family) => family.consonant === entry.fidel);
       if (idx !== -1) {
         setActiveConsonantBtn(btn);
-        if (!revealMode || selectedFamilyIndex !== idx) {
-          renderVowels(idx);
-        }
         if (revealMode) {
+          renderVowels(idx);
           handleRevealConsonantClick(entry.fidel);
+        } else {
+          if (selectedFamilyIndex !== idx) {
+            renderVowels(idx);
+          }
         }
       } else {
-        addCharacter(entry.fidel);
+        if (revealMode) {
+          handleRevealPunctuationClick(entry.fidel);
+        } else {
+          addCharacter(entry.fidel);
+        }
       }
     });
     row.appendChild(btn);
@@ -478,6 +484,9 @@ document.addEventListener('keydown', (event) => {
       handleRevealConsonantClick(entry.fidel);
     }
   } else if (event.key === '/' && event.shiftKey) {
+    if (revealMode) {
+      handleRevealPunctuationClick('፡');
+    }
     addCharacter('፡');
   } else {
     addCharacter(entry.fidel);
@@ -486,9 +495,8 @@ document.addEventListener('keydown', (event) => {
 
 let revealSequence = [];
 let revealIndex = 0;
-let currentRevealVowelIndex = 0;
 
-function highlightNextConsonant() {
+function highlightNextStep() {
   if (revealSequence.length === 0 || revealIndex >= revealSequence.length) return;
   
   document.querySelectorAll('.consonant-btn').forEach(btn => {
@@ -496,15 +504,27 @@ function highlightNextConsonant() {
   });
   
   const item = revealSequence[revealIndex];
-  document.querySelectorAll('.consonant-btn').forEach(b => {
-    const fidelChar = b.querySelector('.fidel-char')?.textContent || '';
-    if (fidelChar === item.consonant) {
-      const colors = ['revealed-green', 'revealed-yellow', 'revealed-red'];
-      const colorClass = colors[revealIndex % 3];
-      b.classList.add(colorClass);
-      b.dataset.revealColor = colorClass;
-    }
-  });
+  if (item.type === 'consonant') {
+    document.querySelectorAll('.consonant-btn').forEach(b => {
+      const fidelChar = b.querySelector('.fidel-char')?.textContent || '';
+      if (fidelChar === item.consonant) {
+        const colors = ['revealed-green', 'revealed-yellow', 'revealed-red'];
+        const colorClass = colors[revealIndex % 3];
+        b.classList.add(colorClass);
+        b.dataset.revealColor = colorClass;
+      }
+    });
+  } else if (item.type === 'punctuation') {
+    document.querySelectorAll('.consonant-btn').forEach(b => {
+      const fidelChar = b.querySelector('.fidel-char')?.textContent || '';
+      if (fidelChar === item.char) {
+        const colors = ['revealed-green', 'revealed-yellow', 'revealed-red'];
+        const colorClass = colors[revealIndex % 3];
+        b.classList.add(colorClass);
+        b.dataset.revealColor = colorClass;
+      }
+    });
+  }
 }
 
 function revealAnswer() {
@@ -514,95 +534,89 @@ function revealAnswer() {
   const word = currentWord.amharic;
   
   revealSequence = [];
-  const seen = new Set();
   for (let i = 0; i < word.length; i++) {
     const char = word[i];
     const family = alphabet.find(f => {
       const normalized = normalizeAmharicChar(char);
       return f.vowels.some(v => normalizeAmharicChar(v.fidel) === normalized);
     });
-    if (family && !seen.has(family.consonant)) {
-      seen.add(family.consonant);
+    
+    if (family) {
+      const vowelIndex = family.vowels.findIndex(v => normalizeAmharicChar(v.fidel) === normalizeAmharicChar(char));
       revealSequence.push({
+        type: 'consonant',
         consonant: family.consonant,
-        char,
-        family
+        vowelIndex: vowelIndex,
+        char
+      });
+    } else {
+      revealSequence.push({
+        type: 'punctuation',
+        char
       });
     }
   }
   
   revealIndex = 0;
-  currentRevealVowelIndex = 0;
   
   document.querySelectorAll('.consonant-btn').forEach(btn => {
     btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
   });
+  document.querySelectorAll('.vowel-btn').forEach(btn => {
+    btn.classList.remove('revealed-correct');
+  });
   
-  highlightNextConsonant();
-}
-
-function getVowelIndicesForCurrentConsonant() {
-  if (revealSequence.length === 0 || revealIndex >= revealSequence.length) return [];
-  
-  const item = revealSequence[revealIndex];
-  const word = currentWord.amharic;
-  const vowelIndices = [];
-  
-  for (let i = 0; i < word.length; i++) {
-    const char = word[i];
-    const normalized = normalizeAmharicChar(char);
-    const familyForChar = alphabet.find(f => normalizeAmharicChar(f.consonant) === normalizeAmharicChar(item.consonant));
-    if (familyForChar) {
-      const vowelIndex = familyForChar.vowels.findIndex(v => normalizeAmharicChar(v.fidel) === normalized);
-      if (vowelIndex >= 0) {
-        vowelIndices.push(vowelIndex);
-      }
-    }
-  }
-  
-  return vowelIndices;
+  highlightNextStep();
 }
 
 function revealNextVowel() {
   if (!revealMode) return;
+  if (revealSequence.length === 0 || revealIndex >= revealSequence.length) return;
   
-  const vowelIndices = getVowelIndicesForCurrentConsonant();
-  if (vowelIndices.length === 0) return;
+  const item = revealSequence[revealIndex];
+  if (item.type !== 'consonant') return;
   
-  if (currentRevealVowelIndex < vowelIndices.length) {
-    const idx = vowelIndices[currentRevealVowelIndex];
-    const vowelBtn = vowelRow.children[idx];
-    if (vowelBtn) {
-      vowelBtn.classList.add('revealed-correct');
-    }
-    currentRevealVowelIndex++;
+  const vowelBtn = vowelRow.children[item.vowelIndex];
+  if (vowelBtn) {
+    vowelBtn.classList.add('revealed-correct');
   }
 }
 
-function advanceToNextConsonantIfDone() {
+function advanceToNextStep() {
   if (!revealMode) return;
+  if (revealSequence.length === 0 || revealIndex >= revealSequence.length) return;
   
-  const vowelIndices = getVowelIndicesForCurrentConsonant();
-  if (vowelIndices.length === 0) return;
-  
-  if (currentRevealVowelIndex >= vowelIndices.length) {
-    revealIndex++;
-    currentRevealVowelIndex = 0;
-    if (revealIndex < revealSequence.length) {
-      highlightNextConsonant();
-    }
+  revealIndex++;
+  if (revealIndex < revealSequence.length) {
+    highlightNextStep();
   }
 }
 
 function handleRevealConsonantClick(fidel) {
   if (!revealMode || revealSequence.length === 0) return;
-  
   if (revealIndex >= revealSequence.length) return;
   
   const expected = revealSequence[revealIndex];
   
-  if (expected.consonant === fidel) {
+  if (expected.type === 'consonant' && expected.consonant === fidel) {
     revealNextVowel();
+  }
+}
+
+function handleRevealPunctuationClick(fidel) {
+  if (!revealMode || revealSequence.length === 0) return;
+  if (revealIndex >= revealSequence.length) return;
+  
+  const expected = revealSequence[revealIndex];
+  
+  if (expected.type === 'punctuation' && expected.char === fidel) {
+    addCharacter(fidel);
+    if (activeConsonantBtn) {
+      activeConsonantBtn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+      activeConsonantBtn.classList.remove('active');
+      activeConsonantBtn = null;
+    }
+    advanceToNextStep();
   }
 }
 
