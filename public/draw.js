@@ -31,7 +31,7 @@ let studyComplete = false;
 
 let shuffled = false;
 
-let showFidel = true;
+let showFidel = false;
 
 let strokes = [];
 
@@ -114,7 +114,12 @@ function renderTrace() {
 traceBtn.addEventListener('click', () => {
   traceMode = !traceMode;
   traceBtn.classList.toggle('active', traceMode);
-  renderTrace();
+  if (!traceMode) {
+    traceLayer.textContent = '';
+    traceLayer.hidden = true;
+  } else {
+    renderTrace();
+  }
 });
 
 function getCurrentCharacter() {
@@ -561,6 +566,27 @@ function downscaleDataUrl(dataUrl, maxSize = 256) {
 let lastSubmitTime = 0;
 const SUBMIT_COOLDOWN_MS = 1200;
 
+function showFeedback(isCorrect, duration = 1500) {
+  const overlay = document.getElementById('feedbackOverlay');
+  const icon = document.getElementById('feedbackIcon');
+  const text = document.getElementById('feedbackText');
+  if (!overlay || !icon || !text) return;
+  icon.textContent = isCorrect ? '✓' : '✗';
+  icon.className = `feedback-icon ${isCorrect ? 'correct' : 'incorrect'}`;
+  text.textContent = isCorrect ? 'Correct' : 'Incorrect';
+  text.className = `feedback-text ${isCorrect ? 'correct' : 'incorrect'}`;
+  overlay.hidden = false;
+  requestAnimationFrame(() => {
+    overlay.classList.add('visible');
+  });
+  setTimeout(() => {
+    overlay.classList.remove('visible');
+    setTimeout(() => {
+      overlay.hidden = true;
+    }, 200);
+  }, duration);
+}
+
 async function checkWithModel(imageData, referenceImage) {
   try {
     let features = null;
@@ -599,7 +625,15 @@ async function checkWithModel(imageData, referenceImage) {
 }
 
 async function submitDrawing() {
-  if (!currentCharacter || studyComplete) {
+  if (!currentCharacter) {
+    statusMessage.textContent = 'No character loaded. Please wait or select a character.';
+    statusMessage.className = 'status error';
+    return;
+  }
+
+  if (studyComplete) {
+    statusMessage.textContent = 'Study complete! Start a new session to continue.';
+    statusMessage.className = 'status error';
     return;
   }
 
@@ -624,6 +658,7 @@ async function submitDrawing() {
     console.log('[check] model says match', modelResult.confidence);
     statusMessage.textContent = `Correct! Great job. (model ${Math.round(modelResult.confidence * 100)}%)`;
     statusMessage.className = 'status success';
+    showFeedback(true);
     advanceCharacter();
     return;
   }
@@ -631,26 +666,20 @@ async function submitDrawing() {
     console.log('[check] model says no-match', modelResult.confidence);
     statusMessage.textContent = 'Not quite. Try again.';
     statusMessage.className = 'status error';
+    showFeedback(false);
     return;
   }
-
-  statusMessage.textContent = 'Model is unsure, checking locally...';
-  statusMessage.className = 'status checking';
 
   const local = localCompare(imageData, referenceImage);
-  if (local.verdict === 'match') {
-    statusMessage.textContent = 'Correct! Great job. (local compare)';
-    statusMessage.className = 'status success';
-    advanceCharacter();
-    return;
-  }
   if (local.verdict === 'no-match') {
+    console.log('[check] local says no-match', local.overlap, local.shape);
     statusMessage.textContent = 'Not quite. Try again.';
     statusMessage.className = 'status error';
+    showFeedback(false);
     return;
   }
 
-  statusMessage.textContent = 'Local check is unsure, checking with Gemini...';
+  statusMessage.textContent = 'Checking with Gemini...';
   statusMessage.className = 'status checking';
 
   try {
@@ -673,26 +702,51 @@ async function submitDrawing() {
       const data = await response.json().catch(() => ({}));
       statusMessage.textContent = data?.error || 'Unable to check drawing.';
       statusMessage.className = 'status error';
+      showFeedback(false);
       return;
     }
 
     const data = await response.json();
 
-    if (data.match) {
+    if (data.imageUnreadable) {
+      const VERY_HIGH_OVERLAP = 0.70;
+      const VERY_HIGH_SHAPE = 0.85;
+      const veryConfidentMatch = local.overlap > VERY_HIGH_OVERLAP || local.shape > VERY_HIGH_SHAPE;
+      if (veryConfidentMatch) {
+        statusMessage.textContent = data.message || 'Correct (Gemini unavailable, but local comparison is very confident).';
+        statusMessage.className = 'status success';
+        showFeedback(true);
+        advanceCharacter();
+      } else {
+        statusMessage.textContent = 'Not quite. Try again.';
+        statusMessage.className = 'status error';
+        showFeedback(false);
+      }
+    } else if (data.match) {
       statusMessage.textContent = 'Correct! Great job. (Gemini)';
       statusMessage.className = 'status success';
+      showFeedback(true);
       advanceCharacter();
     } else {
       statusMessage.textContent = 'Not quite. Try again.';
       statusMessage.className = 'status error';
+      showFeedback(false);
     }
   } catch (_error) {
     statusMessage.textContent = 'Unable to check drawing.';
     statusMessage.className = 'status error';
+    showFeedback(false);
   }
 }
 
 enterBtn.addEventListener('click', submitDrawing);
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    submitDrawing();
+  }
+});
 
 clearBtn.addEventListener('click', () => {
   clearCanvas();
@@ -734,12 +788,17 @@ shuffleBtn.addEventListener('click', () => {
 
   const randomChar = allChars[Math.floor(Math.random() * allChars.length)];
   
+  const savedConsonantIndex = currentConsonantIndex;
   currentConsonantIndex = randomChar.familyIndex;
   currentVowelIndex = randomChar.vowelIndex;
   shuffled = true;
   
   renderConsonantBoxes();
   updatePrompt();
+  
+  // Restore the consonant list position so it doesn't shift
+  currentConsonantIndex = savedConsonantIndex;
+  renderConsonantBoxes();
 });
 
 async function playSound() {

@@ -42,6 +42,7 @@ function simpleHash(input) {
 // Throws with error.quota = true only if ALL models are rate-limited.
 async function generateWithGemini(parts) {
   let lastError = null;
+  let imageInputUnsupportedCount = 0;
 
   for (const model of GEMINI_MODELS) {
     try {
@@ -56,10 +57,18 @@ async function generateWithGemini(parts) {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`[gemini] model=${model} status=${response.status} body=${errorText.slice(0, 500)}`);
         const quotaExceeded = /quota|429|rate.?limit|resource exhausted/i.test(errorText);
         if (quotaExceeded) {
           lastError = new Error('Gemini quota exceeded');
           lastError.quota = true;
+          continue;
+        }
+        const unsupportedImage = /does not support.*image|image.*not supported|cannot read.*image|image input is not supported/i.test(errorText);
+        if (unsupportedImage) {
+          imageInputUnsupportedCount += 1;
+          lastError = new Error('Gemini model does not support image input');
+          lastError.imageInputUnsupported = true;
           continue;
         }
         const requestError = new Error(`Gemini request failed: ${errorText.slice(0, 300)}`);
@@ -82,11 +91,23 @@ async function generateWithGemini(parts) {
         lastError = error;
         continue;
       }
+      if (error && error.status === 404) {
+        lastError = error;
+        continue;
+      }
       throw error;
     }
   }
 
-  throw lastError || new Error('All Gemini models failed.');
+  if (imageInputUnsupportedCount === GEMINI_MODELS.length) {
+    const err = new Error('All Gemini models do not support image input.');
+    err.imageInputUnsupported = true;
+    throw err;
+  }
+
+  const err = lastError || new Error('All Gemini models failed.');
+  err.geminiUnavailable = true;
+  throw err;
 }
 
 const vowelSuffixes = ['a', 'u', 'i', 'a', 'e', 'e', 'o'];
@@ -720,7 +741,39 @@ app.post('/api/draw/recognize', async (req, res) => {
         expected
       });
     }
-    return res.status(500).json({ error: 'Unable to recognize drawing.', detail: error.message });
+    const detail = error && error.message ? String(error.message) : '';
+    console.error('[draw/recognize] Gemini error:', detail);
+    if (error && error.imageInputUnsupported) {
+      return res.json({
+        match: null,
+        confidence: null,
+        expected,
+        model: null,
+        imageUnreadable: true,
+        message: 'Gemini could not read the image (model does not support image input).'
+      });
+    }
+    if (error && error.geminiUnavailable) {
+      return res.json({
+        match: null,
+        confidence: null,
+        expected,
+        model: null,
+        imageUnreadable: true,
+        message: 'Gemini is currently unavailable. Using local comparison to make a best guess.'
+      });
+    }
+    if (/does not support.*image|image.*not supported|cannot read.*image|image input is not supported/i.test(detail)) {
+      return res.json({
+        match: null,
+        confidence: null,
+        expected,
+        model: null,
+        imageUnreadable: true,
+        message: 'Gemini could not read the image (model does not support image input).'
+      });
+    }
+    return res.status(500).json({ error: 'Unable to recognize drawing.', detail });
   }
 });
 

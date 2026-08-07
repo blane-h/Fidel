@@ -409,12 +409,7 @@ fidelToggleBtn.addEventListener('click', () => {
   showingFidel = !showingFidel;
   
   if (showingFidel) {
-    const alternateForms = getAlternateFidelForms(currentWord.amharic);
-    if (alternateForms.length > 1) {
-      latinPrompt.innerHTML = alternateForms.join('<br><span class="or-separator">or</span><br>');
-    } else {
-      latinPrompt.textContent = currentWord.amharic;
-    }
+    latinPrompt.textContent = currentWord.amharic;
   } else {
     latinPrompt.textContent = currentWord.latin;
   }

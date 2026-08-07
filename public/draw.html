@@ -24,15 +24,20 @@
         <button id="nextConsonantBtn" class="icon-btn arrow-btn" aria-label="Next consonants">▶</button>
       </section>
 
+      <div id="completionMessage" class="completion-message" hidden></div>
+
       <section class="draw-controls">
-        <button id="shuffleBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Shuffle characters">
-          <img src="/shuffle-icon.png" alt="Shuffle" width="48" height="48" />
+        <button id="traceBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Toggle trace mode">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
         </button>
         <div class="draw-word-row">
           <button id="flipBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Flip display">
             <img src="/flip-icon.png" alt="Flip" width="48" height="48" />
           </button>
-          <h2 style="font-size: 80px;" id="drawPrompt">-</h2>
+          <h2 id="drawPrompt">-</h2>
+          <p id="drawHint" class="prompt-hint" hidden></p>
         </div>
         <div class="draw-controls-right">
           <button id="soundBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Play pronunciation">
@@ -40,10 +45,8 @@
               <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
             </svg>
           </button>
-          <button id="traceBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Toggle trace mode">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-            </svg>
+          <button id="shuffleBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Shuffle characters">
+            <img src="/shuffle-icon.png" alt="Shuffle" width="48" height="48" />
           </button>
         </div>
       </section>
@@ -57,13 +60,21 @@
         <button id="nextVowelBtn" class="icon-btn arrow-btn canvas-arrow canvas-arrow-right" aria-label="Next vowel">▶</button>
       </section>
 
+      <p id="statusMessage" class="status"></p>
+
       <section class="study-tools">
-        <button id="clearBtn" class="tool-btn" aria-label="Clear drawing">Clear</button>
-        <button id="enterBtn" class="tool-btn primary" aria-label="Submit drawing">Enter</button>
+        <button id="clearBtn" type="button" class="tool-btn" aria-label="Clear drawing">Clear</button>
+        <button id="enterBtn" type="button" class="tool-btn primary" aria-label="Submit drawing">Enter</button>
       </section>
     </main>
 
     <script src="/features.js" defer></script>
     <script src="/draw.js" defer></script>
+    <div id="feedbackOverlay" class="feedback-overlay" hidden>
+      <div class="feedback-content">
+        <span id="feedbackIcon" class="feedback-icon"></span>
+        <span id="feedbackText" class="feedback-text"></span>
+      </div>
+    </div>
   </body>
 </html>

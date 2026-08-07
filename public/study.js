@@ -20,6 +20,7 @@ let currentConsonantIndex = 0;
 let currentVowelIndex = 0;
 let currentCharacter = null;
 let frontIsAmharic = true;
+let shuffled = false;
 let isFlipped = false;
 
 const PAGE_SIZE = 8;
@@ -97,13 +98,14 @@ function renderConsonantBoxes() {
   for (let i = start; i < end; i++) {
     const box = document.createElement('div');
     box.className = 'consonant-box';
-    if (i === currentConsonantIndex) {
+    if (!shuffled && i === currentConsonantIndex) {
       box.classList.add('active');
     }
     box.textContent = alphabet[i].latin;
     box.addEventListener('click', () => {
       currentConsonantIndex = i;
       currentVowelIndex = 0;
+      shuffled = false;
       renderConsonantBoxes();
       updateCard();
     });
@@ -158,10 +160,20 @@ function shuffleCards() {
   if (!alphabet.length) return;
   const randomConsonant = Math.floor(Math.random() * alphabet.length);
   const randomVowel = Math.floor(Math.random() * alphabet[randomConsonant].vowels.length);
+  
+  const savedConsonantIndex = currentConsonantIndex;
+  const savedVowelIndex = currentVowelIndex;
+  
   currentConsonantIndex = randomConsonant;
   currentVowelIndex = randomVowel;
-  renderConsonantBoxes();
+  shuffled = true;
+  
   updateCard();
+  
+  // Restore original position so consonant list doesn't shift
+  currentConsonantIndex = savedConsonantIndex;
+  currentVowelIndex = savedVowelIndex;
+  renderConsonantBoxes();
 }
 
 prevConsonantBtn.addEventListener('click', () => advanceConsonant(-1));
