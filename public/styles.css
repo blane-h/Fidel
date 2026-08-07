@@ -100,6 +100,13 @@ body {
 .arrow-btn {
   font-size: 1.75rem;
   color: var(--muted);
+  transition: background 0.1s, transform 0.1s, color 0.1s;
+}
+
+.arrow-btn.pressed {
+  background: #e5e5e5;
+  transform: scale(0.92);
+  color: #111;
 }
 
 .card-nav-btn {
@@ -579,6 +586,9 @@ h2 {
 .canvas-arrow {
   font-size: 5rem;
   color: var(--muted);
+  width: 96px;
+  height: 96px;
+  border-radius: 18px;
 }
 
 .canvas-arrow-left {
@@ -967,6 +977,60 @@ h2 {
   margin: 0.5rem 0;
 }
 
+/* Train draw mode uses the draw page's controls/canvas layout */
+.train-draw .draw-controls {
+  width: 100%;
+  justify-content: center;
+}
+
+.train-draw .draw-center-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+}
+
+.train-draw .draw-center-row h2 {
+  margin: 0;
+  font-size: 4rem;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  text-transform: lowercase;
+  text-align: center;
+  line-height: 1;
+  min-width: 100px;
+  overflow: visible;
+}
+
+.train-draw .draw-center-row .prompt-hint {
+  text-align: center;
+}
+
+.train-draw .canvas-section {
+  gap: 30px;
+}
+
+.reference-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reference-frame canvas {
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.reference-label {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .tool-btn.success {
   background: var(--success);
   color: #fff;
@@ -1091,54 +1155,83 @@ h2 {
 }
 
 .family-complete-card {
-  background: #e0e0e0;
-  border-radius: 16px;
-  padding: 1.5rem 2rem;
-  max-width: 420px;
-  width: 90%;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 2rem 2.25rem 1.75rem;
+  max-width: 400px;
+  width: 92%;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
 .family-complete-message {
-  margin: 0 0 1rem;
-  font-size: 1.35rem;
+  margin: 0 0 1.25rem;
+  font-size: 1.45rem;
   font-weight: 700;
   color: #111;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .family-complete-actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .family-complete-action {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  background: transparent;
-  border: none;
+  gap: 0.5rem;
+  background: #f5f5f7;
+  border: 1px solid #e5e5e7;
+  border-radius: 14px;
   cursor: pointer;
   color: #111;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  padding: 0.4rem 0.6rem;
-  border-radius: 10px;
-  transition: background 0.15s;
+  padding: 0.65rem 1.1rem;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
 .family-complete-action:hover {
-  background: #f0f0f0;
+  background: #e8e8ed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.family-complete-action:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .family-complete-action svg {
   display: block;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
+}
+
+.family-complete-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: #f5f5f7;
+  border: 1px solid #e5e5e7;
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.family-complete-close:hover {
+  background: #e8e8ed;
+  color: #111;
+  transform: scale(1.05);
 }
 
 .shuffle-btn {
@@ -1302,6 +1395,15 @@ h2 {
 
   .train-controls {
     gap: 0.6rem;
+  }
+
+  .train-draw .canvas-section {
+    gap: 16px;
+  }
+
+  .reference-frame canvas {
+    width: 100px;
+    height: 100px;
   }
 
   .auto-grid {

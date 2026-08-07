@@ -260,16 +260,19 @@ function advanceVowel(delta) {
     }
     return;
   }
-  if (!consonants[currentConsonantIndex]) {
+if (!consonants[currentConsonantIndex]) return;
+
+  const family = consonants[currentConsonantIndex];
+  const nextIndex = currentVowelIndex + delta;
+
+  // Don't wrap backwards: stop at the first vowel (do nothing if already at 0).
+  if (nextIndex < 0) {
     return;
   }
 
-  const family = consonants[currentConsonantIndex];
-  currentVowelIndex += delta;
+  currentVowelIndex = nextIndex;
 
-  if (currentVowelIndex < 0) {
-    currentVowelIndex = family.vowels.length - 1;
-  } else if (currentVowelIndex >= family.vowels.length && delta > 0) {
+  if (currentVowelIndex >= family.vowels.length && delta > 0) {
     showFamilyComplete();
     return;
   }
@@ -873,6 +876,25 @@ shuffleBtn.addEventListener('click', () => {
   }
 });
 
+let pendingAutoplay = false;
+let gestureUnlockAdded = false;
+
+function addGestureUnlock() {
+  if (gestureUnlockAdded) return;
+  gestureUnlockAdded = true;
+
+  const unlock = () => {
+    if (!pendingAutoplay) return;
+    pendingAutoplay = false;
+    playSound();
+  };
+
+  const events = ['pointerdown', 'keydown', 'touchstart'];
+  events.forEach((eventType) => {
+    document.addEventListener(eventType, unlock, { once: true, passive: true });
+  });
+}
+
 async function playSound() {
   if (!currentCharacter) {
     return;
@@ -886,7 +908,15 @@ async function playSound() {
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    await audio.play();
+    try {
+      await audio.play();
+      pendingAutoplay = false;
+    } catch (_playError) {
+      // Autoplay blocked before the first user gesture. Replay on first
+      // interaction so the current character's sound is still heard.
+      pendingAutoplay = true;
+      addGestureUnlock();
+    }
   } catch (_error) {
     // ignore
   }
@@ -932,6 +962,35 @@ document.getElementById('restartFamilyBtn').addEventListener('click', () => {
   currentVowelIndex = 0;
   renderConsonantBoxes();
   updatePrompt();
+});
+
+document.getElementById('closeFamilyCompleteBtn').addEventListener('click', () => {
+  document.getElementById('familyCompleteOverlay').hidden = true;
+  familyComplete = false;
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) {
+    return;
+  }
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    prevVowelBtn.classList.add('pressed');
+    advanceVowel(-1);
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    nextVowelBtn.classList.add('pressed');
+    advanceVowel(1);
+  }
+});
+
+document.addEventListener('keyup', (event) => {
+  if (event.key === 'ArrowLeft') {
+    prevVowelBtn.classList.remove('pressed');
+  } else if (event.key === 'ArrowRight') {
+    nextVowelBtn.classList.remove('pressed');
+  }
 });
 
 async function loadAlphabet() {

@@ -9,7 +9,6 @@ const nextConsonantBtn = document.getElementById('nextConsonantBtn');
 const backBtn = document.getElementById('backBtn');
 const nextBtn = document.getElementById('nextBtn');
 const cycleBtn = document.getElementById('cycleBtn');
-const flipBtn = document.getElementById('flipBtn');
 const shuffleBtn = document.getElementById('shuffleBtn');
 const soundBtn = document.getElementById('soundBtn');
 const counterDisplay = document.getElementById('counterDisplay');
@@ -201,15 +200,16 @@ function advanceVowel(delta) {
   }
   if (!alphabet[currentConsonantIndex]) return;
   const family = alphabet[currentConsonantIndex];
-  currentVowelIndex += delta;
+  const nextIndex = currentVowelIndex + delta;
 
-  if (currentVowelIndex < 0) {
-    currentVowelIndex = family.vowels.length - 1;
-    if (currentConsonantIndex > 0) {
-      currentConsonantIndex -= 1;
-      currentVowelIndex = alphabet[currentConsonantIndex].vowels.length - 1;
-    }
-  } else if (currentVowelIndex >= family.vowels.length && delta > 0) {
+  // Don't wrap backwards: stop at the first vowel (do nothing if already at 0).
+  if (nextIndex < 0) {
+    return;
+  }
+
+  currentVowelIndex = nextIndex;
+
+  if (currentVowelIndex >= family.vowels.length && delta > 0) {
     showFamilyComplete();
     return;
   }
@@ -282,13 +282,12 @@ backBtn.addEventListener('click', () => advanceVowel(-1));
 nextBtn.addEventListener('click', () => advanceVowel(1));
 cycleBtn.addEventListener('click', cycleCurrentSet);
 shuffleBtn.addEventListener('click', shuffleCards);
-
-flashcard.addEventListener('click', () => {
-  isFlipped = !isFlipped;
-  flashcardInner.classList.toggle('flipped', isFlipped);
+flipBtn.addEventListener('click', () => {
+  frontIsAmharic = !frontIsAmharic;
+  updateCard();
 });
 
-flipBtn.addEventListener('click', () => {
+flashcard.addEventListener('click', () => {
   isFlipped = !isFlipped;
   flashcardInner.classList.toggle('flipped', isFlipped);
 });
@@ -326,6 +325,39 @@ document.getElementById('restartFamilyBtn').addEventListener('click', () => {
   currentVowelIndex = 0;
   renderConsonantBoxes();
   updateCard();
+});
+
+document.getElementById('closeFamilyCompleteBtn').addEventListener('click', () => {
+  document.getElementById('familyCompleteOverlay').hidden = true;
+  familyComplete = false;
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) {
+    return;
+  }
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    backBtn.classList.add('pressed');
+    advanceVowel(-1);
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    nextBtn.classList.add('pressed');
+    advanceVowel(1);
+  } else if (event.key === ' ' || event.code === 'Space') {
+    event.preventDefault();
+    isFlipped = !isFlipped;
+    flashcardInner.classList.toggle('flipped', isFlipped);
+  }
+});
+
+document.addEventListener('keyup', (event) => {
+  if (event.key === 'ArrowLeft') {
+    backBtn.classList.remove('pressed');
+  } else if (event.key === 'ArrowRight') {
+    nextBtn.classList.remove('pressed');
+  }
 });
 
 async function loadAlphabet() {

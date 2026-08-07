@@ -17,11 +17,7 @@ const ctx = drawCanvas.getContext('2d');
 const referenceCanvas = document.getElementById('referenceCanvas');
 const referenceCtx = referenceCanvas.getContext('2d');
 const drawPrompt = document.getElementById('drawPrompt');
-const drawHint = document.getElementById('drawHint');
 const statusMessage = document.getElementById('statusMessage');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const swapBtn = document.getElementById('swapBtn');
 const soundBtn = document.getElementById('soundBtn');
 const traceBtn = document.getElementById('traceBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -40,12 +36,9 @@ const generateBtn = document.getElementById('generateBtn');
 const autoGrid = document.getElementById('autoGrid');
 const saveAutoBtn = document.getElementById('saveAutoBtn');
 const cancelAutoBtn = document.getElementById('cancelAutoBtn');
-const statsText = document.getElementById('statsText');
-const refreshStatsBtn = document.getElementById('refreshStatsBtn');
 
 // ---- State ------------------------------------------------------------------
 let currentCharacter = null;
-let showFidelSpelling = false;
 let traceMode = false;
 let isDrawing = false;
 let lastPoint = null;
@@ -121,21 +114,12 @@ function renderTrace() {
 
 function renderPrompt() {
   if (!currentCharacter) return;
-  if (showFidelSpelling) {
-    drawPrompt.textContent = currentCharacter.fidel;
-    drawHint.textContent = `Latin: ${currentCharacter.latin}`;
-    drawHint.hidden = false;
-  } else {
-    drawPrompt.textContent = currentCharacter.latin;
-    drawHint.textContent = 'Draw the matching fidel';
-    drawHint.hidden = false;
-  }
+  drawPrompt.textContent = currentCharacter.latin;
 }
 
 function loadCharacter(char) {
   currentCharacter = char;
   clearCanvas();
-  showFidelSpelling = false;
   traceMode = false;
   traceBtn.classList.remove('active');
   renderTrace();
@@ -173,22 +157,6 @@ async function loadCharacterBank() {
 }
 
 // ---- Buttons ----------------------------------------------------------------
-swapBtn.addEventListener('click', () => {
-  showFidelSpelling = !showFidelSpelling;
-  renderPrompt();
-});
-prevBtn.addEventListener('click', () => {
-  showFidelSpelling = !showFidelSpelling;
-  renderPrompt();
-});
-nextBtn.addEventListener('click', () => {
-  const n = currentCharacterBank.length;
-  if (n > 0) {
-    loadCharacter(currentCharacterBank[autoBatchIndex++ % n]);
-  } else {
-    loadRandomCharacter();
-  }
-});
 traceBtn.addEventListener('click', () => {
   traceMode = !traceMode;
   traceBtn.classList.toggle('active', traceMode);
@@ -196,10 +164,9 @@ traceBtn.addEventListener('click', () => {
 });
 soundBtn.addEventListener('click', () => {
   if (!currentCharacter) return;
-  const text = showFidelSpelling ? currentCharacter.fidel : currentCharacter.latin;
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(currentCharacter.latin);
     utterance.lang = 'am-ET';
     window.speechSynthesis.speak(utterance);
   }
@@ -266,8 +233,7 @@ async function submitLabel(label) {
     const data = await postSample(currentCharacter.fidel, imageData, referenceImage, label, 'manual');
     statusMessage.textContent = `Saved (${label}). Total: ${data.total}`;
     statusMessage.className = label === 'correct' ? 'status success' : 'status error';
-    // Advance to a new character so you can keep labeling quickly.
-    setTimeout(() => nextBtn.click(), 250);
+    setTimeout(() => loadRandomCharacter(), 250);
   } catch (error) {
     statusMessage.textContent = error.message;
     statusMessage.className = 'status error';
@@ -276,20 +242,9 @@ async function submitLabel(label) {
 
 correctBtn.addEventListener('click', () => submitLabel('correct'));
 incorrectBtn.addEventListener('click', () => submitLabel('incorrect'));
-skipBtn.addEventListener('click', () => nextBtn.click());
+skipBtn.addEventListener('click', () => loadRandomCharacter());
 
 // ---- Stats ------------------------------------------------------------------
-async function refreshStats() {
-  try {
-    const response = await fetch('/api/train/stats');
-    const data = await response.json();
-    statsText.textContent = `Total: ${data.total} · Correct: ${data.byLabel.correct} · Incorrect: ${data.byLabel.incorrect} · Manual: ${data.bySource.manual} · Auto: ${data.bySource.auto}`;
-  } catch (_error) {
-    statsText.textContent = 'Stats unavailable.';
-  }
-}
-refreshStatsBtn.addEventListener('click', refreshStats);
-
 // ---- Auto generation ----------------------------------------------------------
 
 // Render a fidel glyph onto a canvas with random perturbations to simulate
@@ -533,7 +488,6 @@ saveAutoBtn.addEventListener('click', async () => {
     statusMessage.textContent = `Saved ${saved} samples.`;
     statusMessage.className = 'status success';
   }
-  refreshStats();
 });
 
 // ---- Mode toggle ------------------------------------------------------------
@@ -553,7 +507,6 @@ autoModeBtn.addEventListener('click', () => setMode('auto'));
 async function init() {
   await loadCharacterBank();
   await loadRandomCharacter();
-  await refreshStats();
 }
 
 init();
