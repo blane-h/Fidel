@@ -517,6 +517,11 @@ db.run(`
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/study', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'study.html')));
+app.get('/draw', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'draw.html')));
+app.get('/train', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'train.html')));
+
 const wordsRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
