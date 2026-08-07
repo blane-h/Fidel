@@ -281,17 +281,20 @@ def fetch_real_amharic_words(limit: int) -> List[dict]:
 def refresh_word_bank() -> dict:
     conn = get_db_connection()
     try:
-        row = conn.execute("SELECT COUNT(*) AS count FROM words WHERE latin GLOB '*-[0-9][0-9][0-9][0-9]' OR latin GLOB '*-[0-9][0-9][0-9][0-9][0-9]'").fetchone()
-        has_generated = (row['count'] if row else 0) > 0
-        row = conn.execute("SELECT COUNT(*) AS count FROM words WHERE translation IS NULL OR TRIM(translation) = ''").fetchone()
-        has_missing = (row['count'] if row else 0) > 0
+        row = conn.execute('SELECT COUNT(*) AS count FROM words').fetchone()
+        current_count = row['count'] if row else 0
 
-        if not has_generated and not has_missing:
-            row = conn.execute('SELECT COUNT(*) AS count FROM words').fetchone()
-            if (row['count'] if row else 0) >= TARGET_WORD_COUNT:
-                return {'added': 0, 'total': row['count'] if row else 0}
+        if current_count >= TARGET_WORD_COUNT:
+            return {'added': 0, 'total': current_count}
 
-        real_words = fetch_real_amharic_words(TARGET_WORD_COUNT)
+        try:
+            real_words = fetch_real_amharic_words(TARGET_WORD_COUNT)
+        except Exception as fetch_error:
+            print('Word refresh skipped:', fetch_error)
+            if current_count > 0:
+                return {'added': 0, 'total': current_count}
+            raise
+
         conn.execute('DELETE FROM words')
         for word in real_words:
             conn.execute(
@@ -532,7 +535,14 @@ def api_words_random():
             row = conn.execute(query).fetchone()
 
         if not row:
-            return jsonify({'error': 'No words found.'}), 404
+            fallback = {
+                'id': 0,
+                'latin': 'house',
+                'amharic': 'ቤት',
+                'translation': 'house',
+                'hasAudio': 0
+            }
+            return jsonify(fallback)
         return jsonify(dict(row))
     finally:
         conn.close()

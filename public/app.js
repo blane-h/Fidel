@@ -360,6 +360,12 @@ async function loadWord() {
     btn.classList.remove('revealed-correct');
   });
   const response = await fetch('/api/words/random');
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    statusMessage.textContent = data?.error || 'Failed to load word.';
+    statusMessage.className = 'status error';
+    return;
+  }
   const word = await response.json();
   currentWord = word;
   answer = [];
