@@ -15,7 +15,7 @@ const traceLayer = document.getElementById('traceLayer');
 const soundBtn = document.getElementById('soundBtn');
 const prevVowelBtn = document.getElementById('prevVowelBtn');
 const nextVowelBtn = document.getElementById('nextVowelBtn');
-const flipBtn = document.getElementById('flipBtn');
+const cycleBtn = document.getElementById('cycleBtn');
 
 let alphabet = [];
 let consonants = [];
@@ -28,10 +28,12 @@ let lastPoint = null;
 let currentAudio = null;
 
 let studyComplete = false;
+let familyComplete = false;
 
 let shuffleMode = false;
 let shuffleHistory = [];
 let shuffleHistoryIndex = -1;
+let shuffleBaseConsonantIndex = 0;
 
 let showFidel = false;
 
@@ -168,6 +170,17 @@ function getCurrentPage() {
   return TOTAL_PAGES - 1;
 }
 
+function getCurrentPageForIndex(consIndex) {
+  let accumulated = 0;
+  for (let i = 0; i < TOTAL_PAGES; i++) {
+    accumulated += PAGE_SIZES[i];
+    if (consIndex < accumulated) {
+      return i;
+    }
+  }
+  return TOTAL_PAGES - 1;
+}
+
 function getPageStart(pageIndex) {
   let start = 0;
   for (let i = 0; i < pageIndex; i++) {
@@ -178,7 +191,8 @@ function getPageStart(pageIndex) {
 
 function renderConsonantBoxes() {
   consonantBoxes.innerHTML = '';
-  const pageIndex = getCurrentPage();
+  const effectiveIndex = shuffleMode ? shuffleBaseConsonantIndex : currentConsonantIndex;
+  const pageIndex = getCurrentPageForIndex(effectiveIndex);
   const pageSize = getPageSize(pageIndex);
   const start = getPageStart(pageIndex);
   const end = Math.min(start + pageSize, consonants.length);
@@ -194,6 +208,7 @@ function renderConsonantBoxes() {
       if (shuffleMode) {
         shuffleMode = false;
         shuffleBtn.classList.remove('active');
+        cycleBtn.disabled = false;
         shuffleHistory = [];
         shuffleHistoryIndex = -1;
       }
@@ -254,10 +269,19 @@ function advanceVowel(delta) {
 
   if (currentVowelIndex < 0) {
     currentVowelIndex = family.vowels.length - 1;
-  } else if (currentVowelIndex >= family.vowels.length) {
-    currentVowelIndex = 0;
+  } else if (currentVowelIndex >= family.vowels.length && delta > 0) {
+    showFamilyComplete();
+    return;
   }
 
+  updatePrompt();
+}
+
+function cycleCurrentSet() {
+  if (shuffleMode) {
+    return;
+  }
+  currentVowelIndex = 0;
   updatePrompt();
 }
 
@@ -269,14 +293,8 @@ function advanceCharacter() {
   currentVowelIndex += 1;
 
   if (currentVowelIndex >= 7) {
-    currentVowelIndex = 0;
-    currentConsonantIndex += 1;
-
-    if (currentConsonantIndex >= consonants.length) {
-      studyComplete = true;
-      showCompletion();
-      return;
-    }
+    showFamilyComplete();
+    return;
   }
 
   renderConsonantBoxes();
@@ -666,6 +684,12 @@ async function submitDrawing() {
     return;
   }
 
+  if (familyComplete) {
+    statusMessage.textContent = 'Finish the current family or continue to the next one.';
+    statusMessage.className = 'status error';
+    return;
+  }
+
   const now = Date.now();
   if (now - lastSubmitTime < SUBMIT_COOLDOWN_MS) {
     return;
@@ -832,14 +856,20 @@ shuffleBtn.addEventListener('click', () => {
 
   shuffleMode = !shuffleMode;
   shuffleBtn.classList.toggle('active', shuffleMode);
+  cycleBtn.disabled = shuffleMode;
 
   if (shuffleMode) {
+    shuffleBaseConsonantIndex = currentConsonantIndex;
     shuffleHistory = [];
     shuffleHistoryIndex = -1;
     addShuffledCharacter();
   } else {
     shuffleHistory = [];
     shuffleHistoryIndex = -1;
+    currentConsonantIndex = 0;
+    currentVowelIndex = 0;
+    renderConsonantBoxes();
+    updatePrompt();
   }
 });
 
@@ -864,11 +894,44 @@ async function playSound() {
 
 soundBtn.addEventListener('click', playSound);
 
-flipBtn.addEventListener('click', () => {
+cycleBtn.addEventListener('click', cycleCurrentSet);
+
+drawPrompt.addEventListener('click', () => {
   showFidel = !showFidel;
   if (currentCharacter) {
     drawPrompt.textContent = showFidel ? currentCharacter.fidel : currentCharacter.latin;
   }
+});
+
+function showFamilyComplete() {
+  familyComplete = true;
+  const family = consonants[currentConsonantIndex];
+  document.getElementById('familyCompleteMessage').innerHTML =
+    'You finished the <strong>' + family.latin + '</strong> family!<br>Use the <strong>cycle</strong> icon to restart this family, or the <strong>next arrow</strong> to continue.';
+  document.getElementById('familyCompleteOverlay').hidden = false;
+}
+
+document.getElementById('nextFamilyBtn').addEventListener('click', () => {
+  document.getElementById('familyCompleteOverlay').hidden = true;
+  familyComplete = false;
+
+  if (currentConsonantIndex < consonants.length - 1) {
+    currentConsonantIndex += 1;
+    currentVowelIndex = 0;
+    renderConsonantBoxes();
+    updatePrompt();
+  } else {
+    studyComplete = true;
+    showCompletion();
+  }
+});
+
+document.getElementById('restartFamilyBtn').addEventListener('click', () => {
+  document.getElementById('familyCompleteOverlay').hidden = true;
+  familyComplete = false;
+  currentVowelIndex = 0;
+  renderConsonantBoxes();
+  updatePrompt();
 });
 
 async function loadAlphabet() {

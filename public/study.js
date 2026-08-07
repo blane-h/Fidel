@@ -23,6 +23,8 @@ let frontIsAmharic = false;
 let shuffleMode = false;
 let shuffleHistory = [];
 let shuffleHistoryIndex = -1;
+let shuffleBaseConsonantIndex = 0;
+let familyComplete = false;
 let isFlipped = false;
 
 const PAGE_SIZE = 8;
@@ -38,6 +40,17 @@ function getCurrentPage() {
   for (let i = 0; i < TOTAL_PAGES; i++) {
     accumulated += PAGE_SIZES[i];
     if (currentConsonantIndex < accumulated) {
+      return i;
+    }
+  }
+  return TOTAL_PAGES - 1;
+}
+
+function getCurrentPageForIndex(consIndex) {
+  let accumulated = 0;
+  for (let i = 0; i < TOTAL_PAGES; i++) {
+    accumulated += PAGE_SIZES[i];
+    if (consIndex < accumulated) {
       return i;
     }
   }
@@ -92,7 +105,8 @@ function playSound() {
 
 function renderConsonantBoxes() {
   consonantBoxes.innerHTML = '';
-  const pageIndex = getCurrentPage();
+  const effectiveIndex = shuffleMode ? shuffleBaseConsonantIndex : currentConsonantIndex;
+  const pageIndex = getCurrentPageForIndex(effectiveIndex);
   const pageSize = getPageSize(pageIndex);
   const start = getPageStart(pageIndex);
   const end = Math.min(start + pageSize, alphabet.length);
@@ -108,6 +122,7 @@ function renderConsonantBoxes() {
       if (shuffleMode) {
         shuffleMode = false;
         shuffleBtn.classList.remove('active');
+        cycleBtn.disabled = false;
         shuffleHistory = [];
         shuffleHistoryIndex = -1;
       }
@@ -164,11 +179,9 @@ function advanceVowel(delta) {
       currentConsonantIndex -= 1;
       currentVowelIndex = alphabet[currentConsonantIndex].vowels.length - 1;
     }
-  } else if (currentVowelIndex >= family.vowels.length) {
-    currentVowelIndex = 0;
-    if (currentConsonantIndex < alphabet.length - 1) {
-      currentConsonantIndex += 1;
-    }
+  } else if (currentVowelIndex >= family.vowels.length && delta > 0) {
+    showFamilyComplete();
+    return;
   }
 
   renderConsonantBoxes();
@@ -177,7 +190,6 @@ function advanceVowel(delta) {
 
 function cycleCurrentSet() {
   if (shuffleMode) {
-    addShuffledCharacter();
     return;
   }
   currentVowelIndex = 0;
@@ -217,14 +229,20 @@ function shuffleCards() {
 
   shuffleMode = !shuffleMode;
   shuffleBtn.classList.toggle('active', shuffleMode);
+  cycleBtn.disabled = shuffleMode;
 
   if (shuffleMode) {
+    shuffleBaseConsonantIndex = currentConsonantIndex;
     shuffleHistory = [];
     shuffleHistoryIndex = -1;
     addShuffledCharacter();
   } else {
     shuffleHistory = [];
     shuffleHistoryIndex = -1;
+    currentConsonantIndex = 0;
+    currentVowelIndex = 0;
+    renderConsonantBoxes();
+    updateCard();
   }
 }
 
@@ -246,6 +264,39 @@ flipBtn.addEventListener('click', () => {
 });
 
 soundBtn.addEventListener('click', playSound);
+
+function showFamilyComplete() {
+  familyComplete = true;
+  const family = alphabet[currentConsonantIndex];
+  document.getElementById('familyCompleteMessage').innerHTML =
+    'You finished the <strong>' + family.latin + '</strong> family!<br>Use the <strong>cycle</strong> icon to restart this family, or the <strong>next arrow</strong> to continue.';
+  document.getElementById('familyCompleteOverlay').hidden = false;
+}
+
+document.getElementById('nextFamilyBtn').addEventListener('click', () => {
+  document.getElementById('familyCompleteOverlay').hidden = true;
+  familyComplete = false;
+
+  if (currentConsonantIndex < alphabet.length - 1) {
+    currentConsonantIndex += 1;
+    currentVowelIndex = 0;
+    renderConsonantBoxes();
+    updateCard();
+  } else {
+    currentConsonantIndex = 0;
+    currentVowelIndex = 0;
+    renderConsonantBoxes();
+    updateCard();
+  }
+});
+
+document.getElementById('restartFamilyBtn').addEventListener('click', () => {
+  document.getElementById('familyCompleteOverlay').hidden = true;
+  familyComplete = false;
+  currentVowelIndex = 0;
+  renderConsonantBoxes();
+  updateCard();
+});
 
 async function loadAlphabet() {
   try {
