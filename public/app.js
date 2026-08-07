@@ -10,6 +10,7 @@ const soundBtn = document.getElementById('soundBtn');
 const backspaceBtn = document.getElementById('backspaceBtn');
 const enterBtn = document.getElementById('enterBtn');
 const newWordBtn = document.getElementById('newWordBtn');
+const revealBtn = document.getElementById('revealBtn');
 
 let alphabet = [];
 let selectedFamilyIndex = null;
@@ -18,6 +19,8 @@ let answer = [];
 let currentAudio = null;
 let activeConsonantBtn = null;
 let showingFidel = false;
+let revealMode = false;
+let autoAdvanceTimeout = null;
 const KEYBOARD_KEY_WIDTH = 55;
 const KEYBOARD_KEY_GAP = 4;
 const KEYBOARD_KEY_TOTAL = KEYBOARD_KEY_WIDTH + KEYBOARD_KEY_GAP;
@@ -137,6 +140,19 @@ function evaluateAnswer() {
   if (typed === expected) {
     statusMessage.textContent = 'Correct! Great job.';
     statusMessage.classList.add('success');
+    if (!revealMode) {
+      if (autoAdvanceTimeout) clearTimeout(autoAdvanceTimeout);
+      autoAdvanceTimeout = setTimeout(() => {
+        autoAdvanceTimeout = null;
+        loadWord();
+        document.querySelectorAll('.consonant-btn').forEach(btn => {
+          btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+        });
+        document.querySelectorAll('.vowel-btn').forEach(btn => {
+          btn.classList.remove('revealed-correct');
+        });
+      }, 1200);
+    }
     return;
   }
 
@@ -151,6 +167,19 @@ function evaluateAnswer() {
   if (isCorrect) {
     statusMessage.textContent = 'Correct! Great job.';
     statusMessage.classList.add('success');
+    if (!revealMode) {
+      if (autoAdvanceTimeout) clearTimeout(autoAdvanceTimeout);
+      autoAdvanceTimeout = setTimeout(() => {
+        autoAdvanceTimeout = null;
+        loadWord();
+        document.querySelectorAll('.consonant-btn').forEach(btn => {
+          btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+        });
+        document.querySelectorAll('.vowel-btn').forEach(btn => {
+          btn.classList.remove('revealed-correct');
+        });
+      }, 1200);
+    }
   } else {
     statusMessage.textContent = 'Not quite. Try again.';
     statusMessage.classList.add('error');
@@ -213,7 +242,21 @@ function renderVowels(index) {
     btn.type = 'button';
     btn.dataset.vowelIndex = vowelIndex;
     btn.innerHTML = `<span class="vowel-char">${char.fidel}</span><span class="vowel-number">${vowelIndex + 1}</span>`;
-    btn.addEventListener('click', () => addCharacter(char.fidel));
+    btn.addEventListener('click', () => {
+      if (revealMode) {
+        revealNextVowel();
+        addCharacter(char.fidel);
+        btn.classList.remove('revealed-correct');
+        if (activeConsonantBtn) {
+          activeConsonantBtn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+          activeConsonantBtn.classList.remove('active');
+          activeConsonantBtn = null;
+        }
+        advanceToNextConsonantIfDone();
+      } else {
+        addCharacter(char.fidel);
+      }
+    });
     vowelRow.appendChild(btn);
   });
 }
@@ -242,7 +285,12 @@ function renderKeyboardRow(keys, rowTop, rowLeftOffset) {
       const idx = alphabet.findIndex((family) => family.consonant === entry.fidel);
       if (idx !== -1) {
         setActiveConsonantBtn(btn);
-        renderVowels(idx);
+        if (!revealMode || selectedFamilyIndex !== idx) {
+          renderVowels(idx);
+        }
+        if (revealMode) {
+          handleRevealConsonantClick(entry.fidel);
+        }
       }
     });
     row.appendChild(btn);
@@ -278,6 +326,16 @@ function fitKeyboard() {
 }
 
 async function loadWord() {
+  if (autoAdvanceTimeout) {
+    clearTimeout(autoAdvanceTimeout);
+    autoAdvanceTimeout = null;
+  }
+  document.querySelectorAll('.consonant-btn').forEach(btn => {
+    btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+  });
+  document.querySelectorAll('.vowel-btn').forEach(btn => {
+    btn.classList.remove('revealed-correct');
+  });
   const response = await fetch('/api/words/random');
   const word = await response.json();
   currentWord = word;
@@ -408,11 +466,173 @@ document.addEventListener('keydown', (event) => {
   if (idx !== -1) {
     const btn = consonantGrid.querySelector(`[data-key="${event.key}"]`);
     setActiveConsonantBtn(btn);
-    renderVowels(idx);
+    if (!revealMode || selectedFamilyIndex !== idx) {
+      renderVowels(idx);
+    }
+    if (revealMode) {
+      handleRevealConsonantClick(entry.fidel);
+    }
   }
 });
 
-newWordBtn.addEventListener('click', loadWord);
+let revealSequence = [];
+let revealIndex = 0;
+let currentRevealVowelIndex = 0;
+
+function highlightNextConsonant() {
+  if (revealSequence.length === 0 || revealIndex >= revealSequence.length) return;
+  
+  document.querySelectorAll('.consonant-btn').forEach(btn => {
+    btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+  });
+  
+  const item = revealSequence[revealIndex];
+  document.querySelectorAll('.consonant-btn').forEach(b => {
+    const fidelChar = b.querySelector('.fidel-char')?.textContent || '';
+    if (fidelChar === item.consonant) {
+      const colors = ['revealed-green', 'revealed-yellow', 'revealed-red'];
+      const colorClass = colors[revealIndex % 3];
+      b.classList.add(colorClass);
+      b.dataset.revealColor = colorClass;
+    }
+  });
+}
+
+function revealAnswer() {
+  if (!currentWord || !alphabet.length) return;
+  revealMode = true;
+  
+  const word = currentWord.amharic;
+  
+  revealSequence = [];
+  const seen = new Set();
+  for (let i = 0; i < word.length; i++) {
+    const char = word[i];
+    const family = alphabet.find(f => {
+      const normalized = normalizeAmharicChar(char);
+      return f.vowels.some(v => normalizeAmharicChar(v.fidel) === normalized);
+    });
+    if (family && !seen.has(family.consonant)) {
+      seen.add(family.consonant);
+      revealSequence.push({
+        consonant: family.consonant,
+        char,
+        family
+      });
+    }
+  }
+  
+  revealIndex = 0;
+  currentRevealVowelIndex = 0;
+  
+  document.querySelectorAll('.consonant-btn').forEach(btn => {
+    btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+  });
+  
+  highlightNextConsonant();
+}
+
+function getVowelIndicesForCurrentConsonant() {
+  if (revealSequence.length === 0 || revealIndex >= revealSequence.length) return [];
+  
+  const item = revealSequence[revealIndex];
+  const word = currentWord.amharic;
+  const vowelIndices = [];
+  
+  for (let i = 0; i < word.length; i++) {
+    const char = word[i];
+    const normalized = normalizeAmharicChar(char);
+    const familyForChar = alphabet.find(f => normalizeAmharicChar(f.consonant) === normalizeAmharicChar(item.consonant));
+    if (familyForChar) {
+      const vowelIndex = familyForChar.vowels.findIndex(v => normalizeAmharicChar(v.fidel) === normalized);
+      if (vowelIndex >= 0) {
+        vowelIndices.push(vowelIndex);
+      }
+    }
+  }
+  
+  return vowelIndices;
+}
+
+function revealNextVowel() {
+  if (!revealMode) return;
+  
+  const vowelIndices = getVowelIndicesForCurrentConsonant();
+  if (vowelIndices.length === 0) return;
+  
+  if (currentRevealVowelIndex < vowelIndices.length) {
+    const idx = vowelIndices[currentRevealVowelIndex];
+    const vowelBtn = vowelRow.children[idx];
+    if (vowelBtn) {
+      vowelBtn.classList.add('revealed-correct');
+    }
+    currentRevealVowelIndex++;
+  }
+}
+
+function advanceToNextConsonantIfDone() {
+  if (!revealMode) return;
+  
+  const vowelIndices = getVowelIndicesForCurrentConsonant();
+  if (vowelIndices.length === 0) return;
+  
+  if (currentRevealVowelIndex >= vowelIndices.length) {
+    revealIndex++;
+    currentRevealVowelIndex = 0;
+    if (revealIndex < revealSequence.length) {
+      highlightNextConsonant();
+    }
+  }
+}
+
+function handleRevealConsonantClick(fidel) {
+  if (!revealMode || revealSequence.length === 0) return;
+  
+  if (revealIndex >= revealSequence.length) return;
+  
+  const expected = revealSequence[revealIndex];
+  
+  if (expected.consonant === fidel) {
+    revealNextVowel();
+  }
+}
+
+newWordBtn.addEventListener('click', () => {
+  loadWord();
+  if (revealMode) {
+    revealMode = false;
+    revealBtn.classList.remove('active');
+    revealBtn.textContent = 'Reveal';
+  }
+  document.querySelectorAll('.consonant-btn').forEach(btn => {
+    btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+  });
+  document.querySelectorAll('.vowel-btn').forEach(btn => {
+    btn.classList.remove('revealed-correct');
+  });
+});
+
+revealBtn.addEventListener('click', () => {
+  if (autoAdvanceTimeout) {
+    clearTimeout(autoAdvanceTimeout);
+    autoAdvanceTimeout = null;
+  }
+  revealMode = !revealMode;
+  if (revealMode) {
+    revealAnswer();
+    revealBtn.classList.add('active');
+    revealBtn.textContent = 'Hide';
+  } else {
+    document.querySelectorAll('.consonant-btn').forEach(btn => {
+      btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+    });
+    document.querySelectorAll('.vowel-btn').forEach(btn => {
+      btn.classList.remove('revealed-correct');
+    });
+    revealBtn.classList.remove('active');
+    revealBtn.textContent = 'Reveal';
+  }
+});
 
 init().catch(() => {
   statusMessage.textContent = 'Failed to load data.';
