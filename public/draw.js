@@ -29,7 +29,9 @@ let currentAudio = null;
 
 let studyComplete = false;
 
-let shuffled = false;
+let shuffleMode = false;
+let shuffleHistory = [];
+let shuffleHistoryIndex = -1;
 
 let showFidel = false;
 
@@ -184,14 +186,19 @@ function renderConsonantBoxes() {
   for (let i = start; i < end; i++) {
     const box = document.createElement('div');
     box.className = 'consonant-box';
-    if (!shuffled && i === currentConsonantIndex) {
+    if (!shuffleMode && i === currentConsonantIndex) {
       box.classList.add('active');
     }
     box.textContent = consonants[i].latin;
     box.addEventListener('click', () => {
+      if (shuffleMode) {
+        shuffleMode = false;
+        shuffleBtn.classList.remove('active');
+        shuffleHistory = [];
+        shuffleHistoryIndex = -1;
+      }
       currentConsonantIndex = i;
       currentVowelIndex = 0;
-      shuffled = false;
       renderConsonantBoxes();
       updatePrompt();
     });
@@ -203,6 +210,15 @@ function renderConsonantBoxes() {
 }
 
 function advancePage(delta) {
+  if (!consonants.length) return;
+  if (shuffleMode) {
+    if (delta > 0) {
+      addShuffledCharacter();
+    } else {
+      navigateShuffleHistory(delta);
+    }
+    return;
+  }
   const pageIndex = getCurrentPage();
   let newPage = pageIndex + delta;
 
@@ -220,6 +236,15 @@ function advancePage(delta) {
 }
 
 function advanceVowel(delta) {
+  if (!consonants.length) return;
+  if (shuffleMode) {
+    if (delta > 0) {
+      addShuffledCharacter();
+    } else {
+      navigateShuffleHistory(delta);
+    }
+    return;
+  }
   if (!consonants[currentConsonantIndex]) {
     return;
   }
@@ -237,6 +262,10 @@ function advanceVowel(delta) {
 }
 
 function advanceCharacter() {
+  if (shuffleMode) {
+    addShuffledCharacter();
+    return;
+  }
   currentVowelIndex += 1;
 
   if (currentVowelIndex >= 7) {
@@ -755,50 +784,63 @@ clearBtn.addEventListener('click', () => {
 });
 
 prevConsonantBtn.addEventListener('click', () => {
-  shuffled = false;
   advancePage(-1);
 });
 
 nextConsonantBtn.addEventListener('click', () => {
-  shuffled = false;
   advancePage(1);
 });
 
 prevVowelBtn.addEventListener('click', () => {
-  shuffled = false;
   advanceVowel(-1);
 });
 
 nextVowelBtn.addEventListener('click', () => {
-  shuffled = false;
   advanceVowel(1);
 });
 
-shuffleBtn.addEventListener('click', () => {
-  const allChars = [];
-  consonants.forEach((family, familyIndex) => {
-    family.vowels.forEach((vowel, vowelIndex) => {
-      allChars.push({ ...vowel, consonant: family.consonant, family, familyIndex, vowelIndex });
-    });
-  });
+function addShuffledCharacter() {
+  const randomConsonant = Math.floor(Math.random() * consonants.length);
+  const randomVowel = Math.floor(Math.random() * consonants[randomConsonant].vowels.length);
 
-  if (allChars.length === 0) {
-    return;
-  }
+  shuffleHistory = shuffleHistory.slice(0, shuffleHistoryIndex + 1);
+  shuffleHistory.push({ consonantIndex: randomConsonant, vowelIndex: randomVowel });
+  shuffleHistoryIndex = shuffleHistory.length - 1;
 
-  const randomChar = allChars[Math.floor(Math.random() * allChars.length)];
-  
-  const savedConsonantIndex = currentConsonantIndex;
-  currentConsonantIndex = randomChar.familyIndex;
-  currentVowelIndex = randomChar.vowelIndex;
-  shuffled = true;
-  
+  currentConsonantIndex = randomConsonant;
+  currentVowelIndex = randomVowel;
   renderConsonantBoxes();
   updatePrompt();
-  
-  // Restore the consonant list position so it doesn't shift
-  currentConsonantIndex = savedConsonantIndex;
+}
+
+function navigateShuffleHistory(delta) {
+  if (!shuffleMode || shuffleHistory.length === 0) return;
+
+  const newIndex = shuffleHistoryIndex + delta;
+  if (newIndex < 0 || newIndex >= shuffleHistory.length) return;
+
+  shuffleHistoryIndex = newIndex;
+  const entry = shuffleHistory[shuffleHistoryIndex];
+  currentConsonantIndex = entry.consonantIndex;
+  currentVowelIndex = entry.vowelIndex;
   renderConsonantBoxes();
+  updatePrompt();
+}
+
+shuffleBtn.addEventListener('click', () => {
+  if (!consonants.length) return;
+
+  shuffleMode = !shuffleMode;
+  shuffleBtn.classList.toggle('active', shuffleMode);
+
+  if (shuffleMode) {
+    shuffleHistory = [];
+    shuffleHistoryIndex = -1;
+    addShuffledCharacter();
+  } else {
+    shuffleHistory = [];
+    shuffleHistoryIndex = -1;
+  }
 });
 
 async function playSound() {
@@ -832,6 +874,9 @@ flipBtn.addEventListener('click', () => {
 async function loadAlphabet() {
   try {
     const response = await fetch('/api/alphabet');
+    if (!response.ok) {
+      throw new Error('Failed to load alphabet');
+    }
     const data = await response.json();
     alphabet = data;
     consonants = [...data];

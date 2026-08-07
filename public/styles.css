@@ -792,6 +792,15 @@ h2 {
   transform: scale(0.95);
 }
 
+.control-btn.active {
+  background: #7f8084;
+  color: white;
+}
+
+.control-btn.active:hover {
+  background: #6a6b6f;
+}
+
 .control-btn svg {
   display: block;
 }

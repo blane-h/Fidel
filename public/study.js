@@ -19,8 +19,10 @@ let alphabet = [];
 let currentConsonantIndex = 0;
 let currentVowelIndex = 0;
 let currentCharacter = null;
-let frontIsAmharic = true;
-let shuffled = false;
+let frontIsAmharic = false;
+let shuffleMode = false;
+let shuffleHistory = [];
+let shuffleHistoryIndex = -1;
 let isFlipped = false;
 
 const PAGE_SIZE = 8;
@@ -98,14 +100,19 @@ function renderConsonantBoxes() {
   for (let i = start; i < end; i++) {
     const box = document.createElement('div');
     box.className = 'consonant-box';
-    if (!shuffled && i === currentConsonantIndex) {
+    if (!shuffleMode && i === currentConsonantIndex) {
       box.classList.add('active');
     }
     box.textContent = alphabet[i].latin;
     box.addEventListener('click', () => {
+      if (shuffleMode) {
+        shuffleMode = false;
+        shuffleBtn.classList.remove('active');
+        shuffleHistory = [];
+        shuffleHistoryIndex = -1;
+      }
       currentConsonantIndex = i;
       currentVowelIndex = 0;
-      shuffled = false;
       renderConsonantBoxes();
       updateCard();
     });
@@ -118,6 +125,14 @@ function renderConsonantBoxes() {
 
 function advanceConsonant(delta) {
   if (!alphabet.length) return;
+  if (shuffleMode) {
+    if (delta > 0) {
+      addShuffledCharacter();
+    } else {
+      navigateShuffleHistory(delta);
+    }
+    return;
+  }
   currentConsonantIndex += delta;
   if (currentConsonantIndex < 0) {
     currentConsonantIndex = alphabet.length - 1;
@@ -130,6 +145,15 @@ function advanceConsonant(delta) {
 }
 
 function advanceVowel(delta) {
+  if (!alphabet.length) return;
+  if (shuffleMode) {
+    if (delta > 0) {
+      addShuffledCharacter();
+    } else {
+      navigateShuffleHistory(delta);
+    }
+    return;
+  }
   if (!alphabet[currentConsonantIndex]) return;
   const family = alphabet[currentConsonantIndex];
   currentVowelIndex += delta;
@@ -152,28 +176,56 @@ function advanceVowel(delta) {
 }
 
 function cycleCurrentSet() {
+  if (shuffleMode) {
+    addShuffledCharacter();
+    return;
+  }
   currentVowelIndex = 0;
+  updateCard();
+}
+
+function addShuffledCharacter() {
+  const randomConsonant = Math.floor(Math.random() * alphabet.length);
+  const randomVowel = Math.floor(Math.random() * alphabet[randomConsonant].vowels.length);
+
+  shuffleHistory = shuffleHistory.slice(0, shuffleHistoryIndex + 1);
+  shuffleHistory.push({ consonantIndex: randomConsonant, vowelIndex: randomVowel });
+  shuffleHistoryIndex = shuffleHistory.length - 1;
+
+  currentConsonantIndex = randomConsonant;
+  currentVowelIndex = randomVowel;
+  renderConsonantBoxes();
+  updateCard();
+}
+
+function navigateShuffleHistory(delta) {
+  if (!shuffleMode || shuffleHistory.length === 0) return;
+
+  const newIndex = shuffleHistoryIndex + delta;
+  if (newIndex < 0 || newIndex >= shuffleHistory.length) return;
+
+  shuffleHistoryIndex = newIndex;
+  const entry = shuffleHistory[shuffleHistoryIndex];
+  currentConsonantIndex = entry.consonantIndex;
+  currentVowelIndex = entry.vowelIndex;
+  renderConsonantBoxes();
   updateCard();
 }
 
 function shuffleCards() {
   if (!alphabet.length) return;
-  const randomConsonant = Math.floor(Math.random() * alphabet.length);
-  const randomVowel = Math.floor(Math.random() * alphabet[randomConsonant].vowels.length);
-  
-  const savedConsonantIndex = currentConsonantIndex;
-  const savedVowelIndex = currentVowelIndex;
-  
-  currentConsonantIndex = randomConsonant;
-  currentVowelIndex = randomVowel;
-  shuffled = true;
-  
-  updateCard();
-  
-  // Restore original position so consonant list doesn't shift
-  currentConsonantIndex = savedConsonantIndex;
-  currentVowelIndex = savedVowelIndex;
-  renderConsonantBoxes();
+
+  shuffleMode = !shuffleMode;
+  shuffleBtn.classList.toggle('active', shuffleMode);
+
+  if (shuffleMode) {
+    shuffleHistory = [];
+    shuffleHistoryIndex = -1;
+    addShuffledCharacter();
+  } else {
+    shuffleHistory = [];
+    shuffleHistoryIndex = -1;
+  }
 }
 
 prevConsonantBtn.addEventListener('click', () => advanceConsonant(-1));
@@ -198,6 +250,9 @@ soundBtn.addEventListener('click', playSound);
 async function loadAlphabet() {
   try {
     const response = await fetch('/api/alphabet');
+    if (!response.ok) {
+      throw new Error('Failed to load alphabet');
+    }
     const data = await response.json();
     alphabet = data;
     currentConsonantIndex = 0;
