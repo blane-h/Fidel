@@ -5,7 +5,6 @@ const latinPrompt = document.getElementById('latinPrompt');
 const translationText = document.getElementById('translationText');
 const answerSlots = document.getElementById('answerSlots');
 const statusMessage = document.getElementById('statusMessage');
-const translateBtn = document.getElementById('translateBtn');
 const soundBtn = document.getElementById('soundBtn');
 const backspaceBtn = document.getElementById('backspaceBtn');
 const enterBtn = document.getElementById('enterBtn');
@@ -372,7 +371,6 @@ async function loadWord() {
   latinPrompt.textContent = word.latin;
   translationText.textContent = word.translation || '';
   translationText.hidden = true;
-  translateBtn.setAttribute('aria-pressed', 'false');
   statusMessage.textContent = '';
   statusMessage.className = 'status';
   renderSlots();
@@ -393,7 +391,7 @@ async function loadWord() {
   }
 }
 
-translateBtn.addEventListener('click', () => {
+latinPrompt.addEventListener('click', () => {
   if (!currentWord || !currentWord.translation) {
     return;
   }
@@ -401,7 +399,6 @@ translateBtn.addEventListener('click', () => {
   translationVisible = !translationVisible;
   translationText.textContent = currentWord.translation;
   translationText.hidden = !translationVisible;
-  translateBtn.setAttribute('aria-pressed', String(translationVisible));
 });
 
 fidelToggleBtn.addEventListener('click', () => {
