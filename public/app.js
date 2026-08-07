@@ -149,19 +149,17 @@ function evaluateAnswer() {
   if (typed === expected) {
     statusMessage.textContent = 'Correct! Great job.';
     statusMessage.classList.add('success');
-    if (!revealMode) {
-      if (autoAdvanceTimeout) clearTimeout(autoAdvanceTimeout);
-      autoAdvanceTimeout = setTimeout(() => {
-        autoAdvanceTimeout = null;
-        loadWord();
-        document.querySelectorAll('.consonant-btn').forEach(btn => {
-          btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
-        });
-        document.querySelectorAll('.vowel-btn').forEach(btn => {
-          btn.classList.remove('revealed-correct');
-        });
-      }, 1200);
-    }
+    if (autoAdvanceTimeout) clearTimeout(autoAdvanceTimeout);
+    autoAdvanceTimeout = setTimeout(() => {
+      autoAdvanceTimeout = null;
+      loadWord();
+      document.querySelectorAll('.consonant-btn').forEach(btn => {
+        btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+      });
+      document.querySelectorAll('.vowel-btn').forEach(btn => {
+        btn.classList.remove('revealed-correct');
+      });
+    }, 1200);
     return;
   }
 
@@ -176,19 +174,17 @@ function evaluateAnswer() {
   if (isCorrect) {
     statusMessage.textContent = 'Correct! Great job.';
     statusMessage.classList.add('success');
-    if (!revealMode) {
-      if (autoAdvanceTimeout) clearTimeout(autoAdvanceTimeout);
-      autoAdvanceTimeout = setTimeout(() => {
-        autoAdvanceTimeout = null;
-        loadWord();
-        document.querySelectorAll('.consonant-btn').forEach(btn => {
-          btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
-        });
-        document.querySelectorAll('.vowel-btn').forEach(btn => {
-          btn.classList.remove('revealed-correct');
-        });
-      }, 1200);
-    }
+    if (autoAdvanceTimeout) clearTimeout(autoAdvanceTimeout);
+    autoAdvanceTimeout = setTimeout(() => {
+      autoAdvanceTimeout = null;
+      loadWord();
+      document.querySelectorAll('.consonant-btn').forEach(btn => {
+        btn.classList.remove('revealed-green', 'revealed-yellow', 'revealed-red');
+      });
+      document.querySelectorAll('.vowel-btn').forEach(btn => {
+        btn.classList.remove('revealed-correct');
+      });
+    }, 1200);
   } else {
     statusMessage.textContent = 'Not quite. Try again.';
     statusMessage.classList.add('error');
