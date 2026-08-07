@@ -319,18 +319,6 @@ def refresh_character_bank() -> dict:
         conn.close()
 
 
-def ensure_column(table_name: str, column_name: str, column_definition: str):
-    conn = get_db_connection()
-    try:
-        columns = conn.execute(f'PRAGMA table_info({table_name})').fetchall()
-        has_column = any(col['name'] == column_name for col in columns)
-        if not has_column:
-            conn.execute(f'ALTER TABLE {table_name} ADD COLUMN {column_definition}')
-            conn.commit()
-    finally:
-        conn.close()
-
-
 def download_pronunciation_audio(audio_url: str) -> Tuple[bytes, str]:
     response = requests.get(audio_url, headers={'User-Agent': 'Mozilla/5.0'})
     if not response.ok:
@@ -861,7 +849,7 @@ def get_recognize_prompt(expected: str) -> str:
 
 # ---- Startup ----
 
-def start_server():
+def bootstrap():
     init_db()
     ensure_column('words', 'pronunciation_audio', 'pronunciation_audio BLOB')
     ensure_column('words', 'pronunciation_mime', 'pronunciation_mime TEXT')
@@ -880,6 +868,9 @@ def start_server():
     except Exception as error:
         print('Character bank seed skipped:', str(error))
 
+
+def start_server():
+    bootstrap()
     app.run(host='0.0.0.0', port=PORT, debug=False)
 
 
