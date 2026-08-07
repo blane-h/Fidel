@@ -33,7 +33,7 @@ const KEYBOARD_ROW_GAP = 10;
 const qwertyRows = [
   ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\'],
   ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'"],
-  ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'],
+  ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', ':'],
 ];
 
 const fidelByKey = {
@@ -71,6 +71,7 @@ const fidelByKey = {
   ',': { fidel: 'ፈ', latin: 'fa' },
   '.': { fidel: 'ፐ', latin: 'pa' },
   '/': { fidel: 'ሐ', latin: 'ha' },
+  ':': { fidel: '፡', latin: ':' },
 };
 
 function renderSlots() {
@@ -291,6 +292,8 @@ function renderKeyboardRow(keys, rowTop, rowLeftOffset) {
         if (revealMode) {
           handleRevealConsonantClick(entry.fidel);
         }
+      } else {
+        addCharacter(entry.fidel);
       }
     });
     row.appendChild(btn);
@@ -304,7 +307,7 @@ function renderConsonants() {
   const rowConfigs = [
     { keys: qwertyRows[0], top: KEYBOARD_ROW_TOP, left: KEYBOARD_ROW_TOP },
     { keys: qwertyRows[1], top: KEYBOARD_ROW_TOP + KEYBOARD_KEY_HEIGHT + KEYBOARD_ROW_GAP, left: KEYBOARD_ROW_HOME },
-    { keys: qwertyRows[2], top: KEYBOARD_ROW_TOP + (KEYBOARD_KEY_HEIGHT + KEYBOARD_ROW_GAP) * 2, left: KEYBOARD_ROW_BOTTOM },
+    { keys: qwertyRows[2], top: KEYBOARD_ROW_TOP + (KEYBOARD_KEY_HEIGHT + KEYBOARD_ROW_GAP) * 2, left: KEYBOARD_ROW_HOME },
   ];
   rowConfigs.forEach((config) => {
     consonantGrid.appendChild(renderKeyboardRow(config.keys, config.top, config.left));
@@ -462,6 +465,8 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
+  if (event.key === 'Shift') return;
+  
   const idx = alphabet.findIndex((family) => family.consonant === entry.fidel);
   if (idx !== -1) {
     const btn = consonantGrid.querySelector(`[data-key="${event.key}"]`);
@@ -472,6 +477,10 @@ document.addEventListener('keydown', (event) => {
     if (revealMode) {
       handleRevealConsonantClick(entry.fidel);
     }
+  } else if (event.key === '/' && event.shiftKey) {
+    addCharacter('፡');
+  } else {
+    addCharacter(entry.fidel);
   }
 });
 
