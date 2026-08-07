@@ -185,6 +185,16 @@ h2 {
   justify-content: center;
 }
 
+.slot.cursor {
+  border-bottom-color: #0F47AF;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { border-bottom-color: #0F47AF; }
+  50% { border-bottom-color: transparent; }
+}
+
 .status {
   text-align: center;
   min-height: 1.2rem;

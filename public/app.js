@@ -16,6 +16,7 @@ let alphabet = [];
 let selectedFamilyIndex = null;
 let currentWord = null;
 let answer = [];
+let cursorPosition = 0;
 let currentAudio = null;
 let activeConsonantBtn = null;
 let showingFidel = false;
@@ -81,7 +82,14 @@ function renderSlots() {
   for (let i = 0; i < length; i += 1) {
     const slot = document.createElement('div');
     slot.className = 'slot';
+    if (i === cursorPosition) {
+      slot.classList.add('cursor');
+    }
     slot.textContent = answer[i] || '';
+    slot.addEventListener('click', () => {
+      cursorPosition = i;
+      renderSlots();
+    });
     answerSlots.appendChild(slot);
   }
 }
@@ -192,7 +200,12 @@ function addCharacter(char) {
     return;
   }
 
-  answer.push(char);
+  if (cursorPosition < answer.length) {
+    answer[cursorPosition] = char;
+  } else {
+    answer.push(char);
+  }
+  cursorPosition = Math.min(cursorPosition + 1, answer.length);
   renderSlots();
   evaluateAnswer();
 }
@@ -202,7 +215,12 @@ function removeCharacter() {
     return;
   }
 
-  answer.pop();
+  if (cursorPosition > 0 && cursorPosition <= answer.length) {
+    answer.splice(cursorPosition - 1, 1);
+    cursorPosition = Math.max(0, cursorPosition - 1);
+  } else if (cursorPosition === 0 && answer.length > 0) {
+    answer.pop();
+  }
   renderSlots();
   statusMessage.textContent = '';
   statusMessage.className = 'status';
@@ -349,6 +367,7 @@ async function loadWord() {
   const word = await response.json();
   currentWord = word;
   answer = [];
+  cursorPosition = 0;
   translationVisible = false;
   showingFidel = false;
   selectedFamilyIndex = null;
@@ -459,6 +478,18 @@ document.addEventListener('keydown', (event) => {
 
   const entry = fidelByKey[event.key];
   if (!entry) {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      cursorPosition = Math.max(0, cursorPosition - 1);
+      renderSlots();
+      return;
+    }
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      cursorPosition = Math.min(answer.length, cursorPosition + 1);
+      renderSlots();
+      return;
+    }
     const vowelIndex = Number(event.key);
     if (Number.isInteger(vowelIndex) && vowelIndex >= 1 && vowelIndex <= 7 && selectedFamilyIndex !== null) {
       const family = alphabet[selectedFamilyIndex]?.vowels || [];
