@@ -886,7 +886,7 @@ async function playSound() {
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.play();
+    await audio.play();
   } catch (_error) {
     // ignore
   }

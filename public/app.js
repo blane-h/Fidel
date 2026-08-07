@@ -20,6 +20,7 @@ let currentAudio = null;
 let activeConsonantBtn = null;
 let showingFidel = false;
 let revealMode = false;
+let translationVisible = false;
 let autoAdvanceTimeout = null;
 const KEYBOARD_KEY_WIDTH = 55;
 const KEYBOARD_KEY_GAP = 4;
@@ -388,33 +389,26 @@ async function loadWord() {
     currentAudio = new Audio(`/api/words/${word.id}/audio`);
     currentAudio.preload = 'auto';
     currentAudio.load();
+    currentAudio.play().catch(() => {});
   }
 }
 
 latinPrompt.addEventListener('click', () => {
-  if (!currentWord || !currentWord.translation) {
-    return;
-  }
-
-  translationVisible = !translationVisible;
-  translationText.textContent = currentWord.translation;
-  translationText.hidden = !translationVisible;
-});
-
-fidelToggleBtn.addEventListener('click', () => {
   if (!currentWord) {
     return;
   }
 
   showingFidel = !showingFidel;
-  
-  if (showingFidel) {
-    latinPrompt.textContent = currentWord.amharic;
-  } else {
-    latinPrompt.textContent = currentWord.latin;
+  latinPrompt.textContent = showingFidel ? currentWord.amharic : currentWord.latin;
+});
+
+fidelToggleBtn.addEventListener('click', () => {
+  if (!currentWord || !currentWord.translation) {
+    return;
   }
-  
-  fidelToggleBtn.setAttribute('aria-pressed', String(showingFidel));
+
+  translationVisible = !translationVisible;
+  translationText.hidden = !translationVisible;
 });
 
 async function init() {

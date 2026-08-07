@@ -26,6 +26,8 @@ let shuffleHistoryIndex = -1;
 let shuffleBaseConsonantIndex = 0;
 let familyComplete = false;
 let isFlipped = false;
+let pendingAutoplay = false;
+let gestureUnlockAdded = false;
 
 const PAGE_SIZE = 8;
 const PAGE_SIZES = [PAGE_SIZE, PAGE_SIZE, 9, 9];
@@ -85,22 +87,50 @@ function updateCard() {
     frontText.textContent = char.latin;
     backText.textContent = char.fidel;
   }
-  counterDisplay.textContent = (currentConsonantIndex + 1) + ' / ' + alphabet.length;
+  if (counterDisplay) {
+    counterDisplay.textContent = (currentConsonantIndex + 1) + ' / ' + alphabet.length;
+  }
   flashcardInner.classList.remove('flipped');
   isFlipped = false;
   playSound();
 }
 
-function playSound() {
+async function playSound() {
   if (!currentCharacter) return;
-  fetch('/api/characters/audio?fidel=' + encodeURIComponent(currentCharacter.fidel))
-    .then(res => res.ok ? res.blob() : Promise.reject())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.play();
-    })
-    .catch(() => {});
+  try {
+    const response = await fetch('/api/characters/audio?fidel=' + encodeURIComponent(currentCharacter.fidel));
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    try {
+      await audio.play();
+      pendingAutoplay = false;
+    } catch (_playError) {
+      // Autoplay was blocked (no user gesture yet). Remember to replay on the
+      // first user interaction so the initial card's sound is still heard.
+      pendingAutoplay = true;
+      addGestureUnlock();
+    }
+  } catch (_error) {
+    // ignore
+  }
+}
+
+function addGestureUnlock() {
+  if (gestureUnlockAdded) return;
+  gestureUnlockAdded = true;
+
+  const unlock = () => {
+    if (!pendingAutoplay) return;
+    pendingAutoplay = false;
+    playSound();
+  };
+
+  const events = ['pointerdown', 'keydown', 'touchstart'];
+  events.forEach((eventType) => {
+    document.addEventListener(eventType, unlock, { once: true, passive: true });
+  });
 }
 
 function renderConsonantBoxes() {
@@ -301,18 +331,29 @@ document.getElementById('restartFamilyBtn').addEventListener('click', () => {
 async function loadAlphabet() {
   try {
     const response = await fetch('/api/alphabet');
-    if (!response.ok) {
-      throw new Error('Failed to load alphabet');
-    }
+    if (!response.ok) return;
     const data = await response.json();
     alphabet = data;
-    currentConsonantIndex = 0;
-    currentVowelIndex = 0;
-    renderConsonantBoxes();
-    updateCard();
   } catch (_error) {
-    frontText.textContent = 'Failed to load alphabet.';
+    // silently ignore load errors
   }
 }
 
-loadAlphabet();
+async function init() {
+  await loadAlphabet();
+  currentConsonantIndex = 0;
+  currentVowelIndex = 0;
+  renderConsonantBoxes();
+  frontText.textContent = '-';
+  // Trigger the cycle button on first load so the initial character's sound
+  // is played (the autoplay recovery in playSound replays it if the browser
+  // blocks audio before the first user gesture).
+  const cycle = document.getElementById('cycleBtn');
+  if (cycle) {
+    cycle.click();
+  } else {
+    cycleCurrentSet();
+  }
+}
+
+init();

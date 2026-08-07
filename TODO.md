@@ -1,15 +1,14 @@
-# TODO - Fix Enter button on Draw page
+# TODO - Fix first sound not playing on Study page load
 
 ## Problem
-Commit `b08c435` restructured `public/draw.html` and removed 3 DOM elements
-that `public/draw.js` still references (`#drawHint`, `#statusMessage`,
-`#completionMessage`). When Enter is clicked, `submitDrawing()` throws a
-null-reference TypeError, so the correctness check never completes.
+On the Study page, `loadAlphabet()` → `cycleCurrentSet()` → `updateCard()` → `playSound()`
+fires during initial page load. Browsers block `audio.play()` before any user gesture
+(autoplay policy), so the first vowel's sound is silently dropped. Sound works on
+subsequent interactions because the user has already engaged with the page.
 
 ## Steps
-- [x] 1. Identify removed elements (`drawHint`, `statusMessage`, `completionMessage`)
-- [x] 2. Add `<p id="drawHint" class="prompt-hint" hidden></p>` into `.draw-word-row`
-- [x] 3. Add `<p id="statusMessage" class="status"></p>` between `canvas-section` and `study-tools`
-- [x] 4. Add `<div id="completionMessage" class="completion-message" hidden></div>` after `study-header`
-- [x] 5. Verify: all 17 element IDs referenced in `draw.js` exist in `draw.html`
-
+- [x] 1. Identify root cause (browser autoplay policy blocks the first play() call)
+- [x] 2. Track when the initial autoplay is blocked (`pendingAutoplay`)
+- [x] 3. Replay the current character sound on the first user gesture (click/key/touch)
+- [x] 4. Trigger the cycle button on initial page load so the first character's sound is played
+- [ ] 5. Verify: first vowel sound plays on initial Study page load (via the cycle button trigger)
