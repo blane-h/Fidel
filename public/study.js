@@ -363,11 +363,18 @@ document.addEventListener('keyup', (event) => {
 async function loadAlphabet() {
   try {
     const response = await fetch('/api/alphabet');
-    if (!response.ok) return;
+    if (!response.ok) {
+      throw new Error(`Alphabet load failed (${response.status})`);
+    }
     const data = await response.json();
     alphabet = data;
-  } catch (_error) {
-    // silently ignore load errors
+  } catch (error) {
+    console.error('Failed to load alphabet:', error);
+    const errorEl = document.getElementById('alphabetError');
+    if (errorEl) {
+      errorEl.textContent = 'Failed to load alphabet. Please refresh.';
+      errorEl.hidden = false;
+    }
   }
 }
 
@@ -377,9 +384,6 @@ async function init() {
   currentVowelIndex = 0;
   renderConsonantBoxes();
   frontText.textContent = '-';
-  // Trigger the cycle button on first load so the initial character's sound
-  // is played (the autoplay recovery in playSound replays it if the browser
-  // blocks audio before the first user gesture).
   const cycle = document.getElementById('cycleBtn');
   if (cycle) {
     cycle.click();
@@ -388,4 +392,6 @@ async function init() {
   }
 }
 
-init();
+init().catch((error) => {
+  console.error('Study page init failed:', error);
+});

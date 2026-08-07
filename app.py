@@ -34,6 +34,7 @@ def find_available_port(start_port: int = 5000, max_tries: int = 20) -> int:
 PORT = int(os.getenv('PORT', 8080))
 TARGET_WORD_COUNT = 1000
 KAIKKI_WORD_LIST_URL = 'https://kaikki.org/dictionary/Amharic/words/kaikki.org-dictionary-Amharic-words.jsonl'
+KAIKKI_WORD_LIST_URL_HTTP = 'http://kaikki.org/dictionary/Amharic/words/kaikki.org-dictionary-Amharic-words.jsonl'
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 GEMINI_MODELS = [
@@ -209,9 +210,22 @@ def pick_english_translation(entry: dict) -> Optional[str]:
 
 
 def fetch_real_amharic_words(limit: int) -> List[dict]:
-    response = requests.get(KAIKKI_WORD_LIST_URL, headers={'User-Agent': 'Mozilla/5.0'}, stream=True)
-    if not response.ok:
-        raise Exception(f'Unable to download word list ({response.status_code})')
+    urls = [KAIKKI_WORD_LIST_URL, KAIKKI_WORD_LIST_URL_HTTP]
+    response = None
+    for url in urls:
+        try:
+            response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, stream=True, timeout=30)
+            if response.ok:
+                break
+        except Exception:
+            continue
+
+    if not response or not response.ok:
+        raise Exception(
+            'Unable to download word list. '
+            'If you are on PythonAnywhere, upload your local fidel.db to the server '
+            'or run setup from a network that can access kaikki.org.'
+        )
 
     words = []
     seen_amharic = set()
