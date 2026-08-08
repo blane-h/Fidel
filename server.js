@@ -514,13 +514,40 @@ db.run(`
   `);
 });
 
+function isMobileUserAgent(userAgent) {
+  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+  return mobileRegex.test(userAgent);
+}
+
+app.use((req, res, next) => {
+  const ua = req.headers['user-agent'] || '';
+  if (isMobileUserAgent(ua)) {
+    req.isMobile = true;
+  }
+  next();
+});
+
+app.get('/', (req, res) => {
+  if (req.isMobile) return res.sendFile(path.join(__dirname, 'public', 'mobile-spell.html'));
+  return res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/study', (req, res) => {
+  if (req.isMobile) return res.sendFile(path.join(__dirname, 'public', 'mobile-study.html'));
+  return res.sendFile(path.join(__dirname, 'public', 'study.html'));
+});
+
+app.get('/draw', (req, res) => {
+  if (req.isMobile) return res.sendFile(path.join(__dirname, 'public', 'mobile-draw.html'));
+  return res.sendFile(path.join(__dirname, 'public', 'draw.html'));
+});
+
+app.get('/train', (_req, res) => {
+  return res.sendFile(path.join(__dirname, 'public', 'train.html'));
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/study', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'study.html')));
-app.get('/draw', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'draw.html')));
-app.get('/train', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'train.html')));
 
 const wordsRateLimiter = rateLimit({
   windowMs: 60 * 1000,

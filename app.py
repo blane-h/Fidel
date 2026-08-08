@@ -6,6 +6,7 @@ import hashlib
 import sqlite3
 import requests
 import threading
+import re
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 
@@ -461,19 +462,30 @@ async def generate_with_gemini(parts: list) -> dict:
 
 # ---- Routes ----
 
+def is_mobile_user_agent(user_agent: str) -> bool:
+    mobile_regex = re.compile(r'Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS', re.IGNORECASE)
+    return bool(mobile_regex.search(user_agent))
+
+
 @app.route('/')
 @app.route('/spell')
 def index():
+    if is_mobile_user_agent(request.headers.get('User-Agent', '')):
+        return send_from_directory('public', 'mobile-spell.html')
     return send_from_directory('public', 'index.html')
 
 
 @app.route('/study')
 def study_page():
+    if is_mobile_user_agent(request.headers.get('User-Agent', '')):
+        return send_from_directory('public', 'mobile-study.html')
     return send_from_directory('public', 'study.html')
 
 
 @app.route('/draw')
 def draw_page():
+    if is_mobile_user_agent(request.headers.get('User-Agent', '')):
+        return send_from_directory('public', 'mobile-draw.html')
     return send_from_directory('public', 'draw.html')
 
 

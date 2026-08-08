@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fidel Draw</title>
+  <link rel="stylesheet" href="/mobile-styles.css" />
+</head>
+<body>
+  <header class="mobile-top-nav">
+    <a href="/" class="mobile-logo" aria-label="Fidel home">ፊደል</a>
+    <h1 class="mobile-title">Draw</h1>
+    <button id="mobileHamburger" class="mobile-hamburger" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+      </svg>
+    </button>
+  </header>
+
+  <div id="mobileNavDrawer" class="mobile-nav-drawer" aria-hidden="true">
+    <div class="mobile-nav-backdrop"></div>
+    <nav class="mobile-nav-panel">
+      <button id="mobileNavClose" class="mobile-nav-close" aria-label="Close navigation">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+      <ul class="mobile-nav-links">
+        <li><a href="/study" class="mobile-nav-link">Study</a></li>
+        <li><a href="/" class="mobile-nav-link">Spell</a></li>
+        <li><a href="/draw" class="mobile-nav-link active">Draw</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <main class="mobile-page">
+    <section class="mobile-content">
+      <div id="mobileConsonantChips" class="mobile-scroll-chips"></div>
+
+      <p id="mobileCompletionMessage" class="mobile-completion" hidden></p>
+
+      <section class="mobile-controls-row">
+        <button id="mobileCycleBtn" class="mobile-icon-btn" aria-label="Cycle">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+          </svg>
+        </button>
+        <button id="mobileTraceBtn" class="mobile-icon-btn" aria-label="Toggle trace">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
+        </button>
+        <h2 id="mobileDrawPrompt" class="mobile-prompt">-</h2>
+        <button id="mobileSoundBtn" class="mobile-icon-btn" aria-label="Play pronunciation">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </button>
+        <button id="mobileShuffleBtn" class="mobile-icon-btn" aria-label="Shuffle">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+          </svg>
+        </button>
+      </section>
+
+      <p id="mobileDrawHint" class="mobile-prompt hint" hidden></p>
+
+      <section class="mobile-card-area">
+        <div class="mobile-drawing-frame">
+          <div id="mobileTraceLayer" class="mobile-trace-layer" hidden></div>
+          <canvas id="mobileDrawCanvas" width="420" height="420" class="mobile-canvas"></canvas>
+        </div>
+      </section>
+
+      <p id="mobileStatusMessage" class="mobile-status"></p>
+
+      <section class="mobile-tools">
+        <button id="mobileClearBtn" type="button" class="mobile-tool-btn">Clear</button>
+        <button id="mobileEnterBtn" type="button" class="mobile-tool-btn primary">Enter</button>
+      </section>
+
+      <section class="mobile-bottom-nav">
+        <button id="mobilePrevVowelBtn" class="mobile-bottom-btn" aria-label="Previous vowel">◀</button>
+        <button id="mobileNextVowelBtn" class="mobile-bottom-btn" aria-label="Next vowel">▶</button>
+      </section>
+
+      <div id="mobileFamilyCompleteOverlay" class="mobile-overlay" hidden>
+        <div class="mobile-overlay-card">
+          <button id="mobileCloseFamilyCompleteBtn" class="mobile-overlay-close" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+          <p id="mobileFamilyCompleteMessage" class="mobile-overlay-message">Finished with U consonant family, click to continue or to study this family again!</p>
+          <div class="mobile-overlay-actions">
+            <button id="mobileNextFamilyBtn" class="mobile-overlay-action" aria-label="Next family">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+              </svg>
+              <span>Next</span>
+            </button>
+            <button id="mobileRestartFamilyBtn" class="mobile-overlay-action" aria-label="Restart family">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+              </svg>
+              <span>Restart</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="mobileFeedbackOverlay" class="mobile-feedback-overlay" hidden>
+        <div class="mobile-feedback-content">
+          <span id="mobileFeedbackIcon" class="mobile-feedback-icon"></span>
+          <span id="mobileFeedbackText" class="mobile-feedback-text"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/mobile-common.js" defer></script>
+  <script src="/mobile-draw.js" defer></script>
+</body>
+</html>
