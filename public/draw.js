@@ -191,11 +191,18 @@ function getPageStart(pageIndex) {
 
 function renderConsonantBoxes() {
   consonantBoxes.innerHTML = '';
-  const effectiveIndex = shuffleMode ? shuffleBaseConsonantIndex : currentConsonantIndex;
-  const pageIndex = getCurrentPageForIndex(effectiveIndex);
-  const pageSize = getPageSize(pageIndex);
-  const start = getPageStart(pageIndex);
-  const end = Math.min(start + pageSize, consonants.length);
+  const isMobile = window.innerWidth <= 640;
+  let start, end;
+  if (isMobile) {
+    start = 0;
+    end = consonants.length;
+  } else {
+    const effectiveIndex = shuffleMode ? shuffleBaseConsonantIndex : currentConsonantIndex;
+    const pageIndex = getCurrentPageForIndex(effectiveIndex);
+    const pageSize = getPageSize(pageIndex);
+    start = getPageStart(pageIndex);
+    end = Math.min(start + pageSize, consonants.length);
+  }
 
   for (let i = start; i < end; i++) {
     const box = document.createElement('div');
@@ -215,6 +222,7 @@ function renderConsonantBoxes() {
       currentConsonantIndex = i;
       currentVowelIndex = 0;
       renderConsonantBoxes();
+      scrollToActiveBox();
       updatePrompt();
     });
     consonantBoxes.appendChild(box);
@@ -222,6 +230,112 @@ function renderConsonantBoxes() {
 
   prevConsonantBtn.disabled = consonants.length === 0;
   nextConsonantBtn.disabled = consonants.length === 0;
+
+  if (isMobile) {
+    updateConsonantScrollbar();
+    requestAnimationFrame(() => scrollToActiveBox(false));
+  }
+}
+
+function updateConsonantScrollbar() {
+  const wrapper = document.querySelector('.consonant-scroll-wrapper');
+  const thumb = document.getElementById('consonantScrollbarThumb');
+  if (!wrapper || !thumb) return;
+
+  const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+  if (maxScroll <= 0) {
+    thumb.style.width = '100%';
+    thumb.style.left = '0';
+    return;
+  }
+
+  const visibleRatio = wrapper.clientWidth / wrapper.scrollWidth;
+  const thumbWidth = Math.max(visibleRatio * 100, 10);
+  const scrollRatio = wrapper.scrollLeft / maxScroll;
+  const thumbLeft = scrollRatio * (100 - thumbWidth);
+
+  thumb.style.width = thumbWidth + '%';
+  thumb.style.left = thumbLeft + '%';
+}
+
+function scrollToActiveBox(behavior = true) {
+  const wrapper = document.querySelector('.consonant-scroll-wrapper');
+  if (!wrapper) return;
+
+  const activeBox = consonantBoxes.querySelector('.consonant-box.active');
+  if (!activeBox) return;
+
+  const wrapperRect = wrapper.getBoundingClientRect();
+  const boxRect = activeBox.getBoundingClientRect();
+  const targetScroll = wrapper.scrollLeft + (boxRect.left - wrapperRect.left) - (wrapperRect.width - boxRect.width) / 2;
+  const clampedScroll = Math.max(0, Math.min(targetScroll, wrapper.scrollWidth - wrapper.clientWidth));
+
+  wrapper.scrollTo({ left: clampedScroll, behavior: behavior ? 'smooth' : 'instant' });
+}
+
+function setupConsonantScroll() {
+  const wrapper = document.querySelector('.consonant-scroll-wrapper');
+  const scrollbar = document.getElementById('consonantScrollbar');
+  if (!wrapper || !scrollbar) return;
+
+  let prevScrollLeft = 0;
+
+  wrapper.addEventListener('scroll', () => {
+    updateConsonantScrollbar();
+
+    const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+    const currentScroll = wrapper.scrollLeft;
+
+    if (currentScroll >= maxScroll && prevScrollLeft < maxScroll) {
+      wrapper.dataset.atEnd = 'true';
+    } else if (currentScroll <= 0 && prevScrollLeft > 0) {
+      wrapper.dataset.atStart = 'true';
+    } else {
+      delete wrapper.dataset.atEnd;
+      delete wrapper.dataset.atStart;
+    }
+
+    prevScrollLeft = currentScroll;
+  });
+
+  wrapper.addEventListener('wheel', (e) => {
+    const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+    if (maxScroll <= 0) return;
+    const scrollingRight = e.deltaX > 0 || e.deltaY < 0;
+    const scrollingLeft = e.deltaX < 0 || e.deltaY > 0;
+
+    if (scrollingRight && wrapper.scrollLeft >= maxScroll - 1) {
+      e.preventDefault();
+      wrapper.scrollTo({ left: 0, behavior: 'smooth' });
+    } else if (scrollingLeft && wrapper.scrollLeft <= 1) {
+      e.preventDefault();
+      wrapper.scrollTo({ left: maxScroll, behavior: 'smooth' });
+    }
+  }, { passive: false });
+
+  let touchStartX = 0;
+  let touchStartScroll = 0;
+
+  wrapper.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartScroll = wrapper.scrollLeft;
+  }, { passive: true });
+
+  wrapper.addEventListener('touchend', () => {
+    const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+    if (wrapper.scrollLeft >= maxScroll - 1 && wrapper.scrollLeft > touchStartScroll) {
+      wrapper.scrollTo({ left: 0, behavior: 'smooth' });
+    } else if (wrapper.scrollLeft <= 1 && wrapper.scrollLeft < touchStartScroll) {
+      wrapper.scrollTo({ left: maxScroll, behavior: 'smooth' });
+    }
+  });
+
+  scrollbar.addEventListener('click', (e) => {
+    const rect = scrollbar.getBoundingClientRect();
+    const clickFraction = (e.clientX - rect.left) / rect.width;
+    const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+    wrapper.scrollTo({ left: clickFraction * maxScroll, behavior: 'smooth' });
+  });
 }
 
 function advancePage(delta) {
@@ -1011,6 +1125,7 @@ async function loadAlphabet() {
 async function init() {
   await loadAlphabet();
   renderConsonantBoxes();
+  setupConsonantScroll();
   updatePrompt();
 }
 

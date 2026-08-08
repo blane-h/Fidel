@@ -20,7 +20,12 @@
     <main class="draw-page">
       <section class="study-header">
         <button id="prevConsonantBtn" class="icon-btn arrow-btn" aria-label="Previous consonants">◀</button>
-        <div id="consonantBoxes" class="consonant-boxes"></div>
+        <div class="consonant-scroll-wrapper">
+          <div id="consonantBoxes" class="consonant-boxes"></div>
+        </div>
+        <div id="consonantScrollbar" class="consonant-scrollbar">
+          <div id="consonantScrollbarThumb" class="consonant-scrollbar-thumb"></div>
+        </div>
         <button id="nextConsonantBtn" class="icon-btn arrow-btn" aria-label="Next consonants">▶</button>
       </section>
 
