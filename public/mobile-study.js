@@ -5,7 +5,7 @@ const MobileStudy = (() => {
   const flashcardInner = document.getElementById('mobileFlashcardInner');
   const frontText = document.getElementById('mobileFrontText');
   const backText = document.getElementById('mobileBackText');
-  const consonantChips = document.getElementById('mobileConsonantChips');
+  const consonantBoxes = document.getElementById('consonantBoxes');
   const cycleBtn = document.getElementById('mobileCycleBtn');
   const flipBtn = document.getElementById('mobileFlipBtn');
   const soundBtn = document.getElementById('mobileSoundBtn');
@@ -83,17 +83,16 @@ const MobileStudy = (() => {
     });
   }
 
-  function renderConsonantChips() {
-    consonantChips.innerHTML = '';
+  function renderConsonantBoxes() {
+    consonantBoxes.innerHTML = '';
     alphabet.forEach((family, i) => {
-      const chip = document.createElement('button');
-      chip.className = 'mobile-chip';
-      chip.type = 'button';
+      const box = document.createElement('div');
+      box.className = 'consonant-box';
       if (!shuffleMode && i === currentConsonantIndex) {
-        chip.classList.add('active');
+        box.classList.add('active');
       }
-      chip.textContent = family.latin;
-      chip.addEventListener('click', () => {
+      box.textContent = family.latin;
+      box.addEventListener('click', () => {
         if (shuffleMode) {
           shuffleMode = false;
           shuffleBtn.classList.remove('active');
@@ -103,19 +102,19 @@ const MobileStudy = (() => {
         }
         currentConsonantIndex = i;
         currentVowelIndex = 0;
-        renderConsonantChips();
+        renderConsonantBoxes();
         updateCard();
       });
-      consonantChips.appendChild(chip);
+      consonantBoxes.appendChild(box);
     });
 
-    updateMobileScrollbar();
-    requestAnimationFrame(() => scrollToActiveChip(false));
+    updateConsonantScrollbar();
+    requestAnimationFrame(() => scrollToActiveBox(false));
   }
 
-  function updateMobileScrollbar() {
+  function updateConsonantScrollbar() {
     const wrapper = document.querySelector('.consonant-scroll-wrapper');
-    const thumb = document.getElementById('mobileConsonantScrollbarThumb');
+    const thumb = document.getElementById('consonantScrollbarThumb');
     if (!wrapper || !thumb) return;
 
     const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
@@ -134,30 +133,30 @@ const MobileStudy = (() => {
     thumb.style.left = thumbLeft + '%';
   }
 
-  function scrollToActiveChip(behavior = true) {
+  function scrollToActiveBox(behavior = true) {
     const wrapper = document.querySelector('.consonant-scroll-wrapper');
     if (!wrapper) return;
 
-    const activeChip = consonantChips.querySelector('.mobile-chip.active');
-    if (!activeChip) return;
+    const activeBox = consonantBoxes.querySelector('.consonant-box.active');
+    if (!activeBox) return;
 
     const wrapperRect = wrapper.getBoundingClientRect();
-    const chipRect = activeChip.getBoundingClientRect();
-    const targetScroll = wrapper.scrollLeft + (chipRect.left - wrapperRect.left) - (wrapperRect.width - chipRect.width) / 2;
+    const boxRect = activeBox.getBoundingClientRect();
+    const targetScroll = wrapper.scrollLeft + (boxRect.left - wrapperRect.left) - (wrapperRect.width - boxRect.width) / 2;
     const clampedScroll = Math.max(0, Math.min(targetScroll, wrapper.scrollWidth - wrapper.clientWidth));
 
     wrapper.scrollTo({ left: clampedScroll, behavior: behavior ? 'smooth' : 'instant' });
   }
 
-  function setupMobileConsonantScroll() {
+  function setupConsonantScroll() {
     const wrapper = document.querySelector('.consonant-scroll-wrapper');
-    const scrollbar = document.getElementById('mobileConsonantScrollbar');
+    const scrollbar = document.getElementById('consonantScrollbar');
     if (!wrapper || !scrollbar) return;
 
     let prevScrollLeft = 0;
 
     wrapper.addEventListener('scroll', () => {
-      updateMobileScrollbar();
+      updateConsonantScrollbar();
 
       const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
       const currentScroll = wrapper.scrollLeft;
@@ -225,7 +224,7 @@ const MobileStudy = (() => {
     if (currentConsonantIndex < 0) currentConsonantIndex = alphabet.length - 1;
     else if (currentConsonantIndex >= alphabet.length) currentConsonantIndex = 0;
     currentVowelIndex = 0;
-    renderConsonantChips();
+    renderConsonantBoxes();
     updateCard();
   }
 
@@ -261,7 +260,7 @@ const MobileStudy = (() => {
     shuffleHistoryIndex = shuffleHistory.length - 1;
     currentConsonantIndex = randomConsonant;
     currentVowelIndex = randomVowel;
-    renderConsonantChips();
+    renderConsonantBoxes();
     updateCard();
   }
 
@@ -273,7 +272,7 @@ const MobileStudy = (() => {
     const entry = shuffleHistory[shuffleHistoryIndex];
     currentConsonantIndex = entry.consonantIndex;
     currentVowelIndex = entry.vowelIndex;
-    renderConsonantChips();
+    renderConsonantBoxes();
     updateCard();
   }
 
@@ -292,7 +291,7 @@ const MobileStudy = (() => {
       shuffleHistoryIndex = -1;
       currentConsonantIndex = 0;
       currentVowelIndex = 0;
-      renderConsonantChips();
+      renderConsonantBoxes();
       updateCard();
     }
   }
@@ -336,12 +335,12 @@ const MobileStudy = (() => {
     if (currentConsonantIndex < alphabet.length - 1) {
       currentConsonantIndex += 1;
       currentVowelIndex = 0;
-      renderConsonantChips();
+      renderConsonantBoxes();
       updateCard();
     } else {
       currentConsonantIndex = 0;
       currentVowelIndex = 0;
-      renderConsonantChips();
+      renderConsonantBoxes();
       updateCard();
     }
   });
@@ -350,7 +349,7 @@ const MobileStudy = (() => {
     familyCompleteOverlay.hidden = true;
     familyComplete = false;
     currentVowelIndex = 0;
-    renderConsonantChips();
+    renderConsonantBoxes();
     updateCard();
   });
 
@@ -363,8 +362,8 @@ const MobileStudy = (() => {
     alphabet = await fetchAlphabet();
     currentConsonantIndex = 0;
     currentVowelIndex = 0;
-    renderConsonantChips();
-    setupMobileConsonantScroll();
+    renderConsonantBoxes();
+    setupConsonantScroll();
     frontText.textContent = '-';
     if (cycleBtn) {
       cycleBtn.click();
