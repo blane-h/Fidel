@@ -207,37 +207,30 @@ body {
 }
 
 .mobile-scroll-chips {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 0.5rem;
-  overflow-x: auto;
-  overflow-y: auto;
-  padding: 0.5rem;
-  max-height: 200px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: none;
-}
-
-.mobile-scroll-chips::-webkit-scrollbar {
-  display: none;
+  justify-content: flex-start;
+  padding: 0 0.5rem;
+  width: max-content;
 }
 
 .mobile-chip {
-  scroll-snap-align: start;
-  border: 1.5px solid #d0d0d0;
-  border-radius: 999px;
-  padding: 0.35rem 0.85rem;
+  flex: 0 0 auto;
+  width: calc((100vw - 4rem) / 7);
+  max-width: calc((100vw - 4rem) / 7);
+  aspect-ratio: 1;
   font-size: 0.9rem;
-  font-weight: 600;
+  border-radius: 50%;
+  padding: 0;
+  scroll-snap-align: center;
+  border: 1.5px solid #d0d0d0;
   background: #fff;
   color: #111;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   user-select: none;
   -webkit-user-select: none;
-  justify-self: center;
-  min-width: 0;
   text-align: center;
   white-space: nowrap;
 }
@@ -246,6 +239,42 @@ body {
   background: #111;
   color: #fff;
   border-color: #111;
+}
+
+.consonant-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.consonant-scroll-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.consonant-scrollbar {
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  margin-top: 0.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.consonant-scrollbar-thumb {
+  height: 100%;
+  background: #999;
+  border-radius: 2px;
+  position: absolute;
+  top: 0;
+  min-width: 20px;
+}
+
+.mobile-consonant-section {
+  width: 100%;
 }
 
 .mobile-controls-row {

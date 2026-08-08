@@ -176,7 +176,110 @@ const MobileDraw = (() => {
       });
       consonantChips.appendChild(chip);
     });
-    consonantChips.scrollLeft = 0;
+
+    updateMobileScrollbar();
+    requestAnimationFrame(() => scrollToActiveChip(false));
+  }
+
+  function updateMobileScrollbar() {
+    const wrapper = document.querySelector('.consonant-scroll-wrapper');
+    const thumb = document.getElementById('mobileConsonantScrollbarThumb');
+    if (!wrapper || !thumb) return;
+
+    const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+    if (maxScroll <= 0) {
+      thumb.style.width = '100%';
+      thumb.style.left = '0';
+      return;
+    }
+
+    const visibleRatio = wrapper.clientWidth / wrapper.scrollWidth;
+    const thumbWidth = Math.max(visibleRatio * 100, 10);
+    const scrollRatio = wrapper.scrollLeft / maxScroll;
+    const thumbLeft = scrollRatio * (100 - thumbWidth);
+
+    thumb.style.width = thumbWidth + '%';
+    thumb.style.left = thumbLeft + '%';
+  }
+
+  function scrollToActiveChip(behavior = true) {
+    const wrapper = document.querySelector('.consonant-scroll-wrapper');
+    if (!wrapper) return;
+
+    const activeChip = consonantChips.querySelector('.mobile-chip.active');
+    if (!activeChip) return;
+
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const chipRect = activeChip.getBoundingClientRect();
+    const targetScroll = wrapper.scrollLeft + (chipRect.left - wrapperRect.left) - (wrapperRect.width - chipRect.width) / 2;
+    const clampedScroll = Math.max(0, Math.min(targetScroll, wrapper.scrollWidth - wrapper.clientWidth));
+
+    wrapper.scrollTo({ left: clampedScroll, behavior: behavior ? 'smooth' : 'instant' });
+  }
+
+  function setupMobileConsonantScroll() {
+    const wrapper = document.querySelector('.consonant-scroll-wrapper');
+    const scrollbar = document.getElementById('mobileConsonantScrollbar');
+    if (!wrapper || !scrollbar) return;
+
+    let prevScrollLeft = 0;
+
+    wrapper.addEventListener('scroll', () => {
+      updateMobileScrollbar();
+
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      const currentScroll = wrapper.scrollLeft;
+
+      if (currentScroll >= maxScroll && prevScrollLeft < maxScroll) {
+        wrapper.dataset.atEnd = 'true';
+      } else if (currentScroll <= 0 && prevScrollLeft > 0) {
+        wrapper.dataset.atStart = 'true';
+      } else {
+        delete wrapper.dataset.atEnd;
+        delete wrapper.dataset.atStart;
+      }
+
+      prevScrollLeft = currentScroll;
+    });
+
+    wrapper.addEventListener('wheel', (e) => {
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      if (maxScroll <= 0) return;
+      const scrollingRight = e.deltaX > 0 || e.deltaY < 0;
+      const scrollingLeft = e.deltaX < 0 || e.deltaY > 0;
+
+      if (scrollingRight && wrapper.scrollLeft >= maxScroll - 1) {
+        e.preventDefault();
+        wrapper.scrollTo({ left: 0, behavior: 'smooth' });
+      } else if (scrollingLeft && wrapper.scrollLeft <= 1) {
+        e.preventDefault();
+        wrapper.scrollTo({ left: maxScroll, behavior: 'smooth' });
+      }
+    }, { passive: false });
+
+    let touchStartX = 0;
+    let touchStartScroll = 0;
+
+    wrapper.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartScroll = wrapper.scrollLeft;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', () => {
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      if (wrapper.scrollLeft >= maxScroll - 1 && wrapper.scrollLeft > touchStartScroll) {
+        wrapper.scrollTo({ left: 0, behavior: 'smooth' });
+      } else if (wrapper.scrollLeft <= 1 && wrapper.scrollLeft < touchStartScroll) {
+        wrapper.scrollTo({ left: maxScroll, behavior: 'smooth' });
+      }
+    });
+
+    scrollbar.addEventListener('click', (e) => {
+      const rect = scrollbar.getBoundingClientRect();
+      const clickFraction = (e.clientX - rect.left) / rect.width;
+      const maxScroll = wrapper.scrollWidth - wrapper.clientWidth;
+      wrapper.scrollTo({ left: clickFraction * maxScroll, behavior: 'smooth' });
+    });
   }
 
   function advancePage(delta) {
@@ -784,6 +887,7 @@ const MobileDraw = (() => {
   async function init() {
     await loadAlphabet();
     renderConsonantChips();
+    setupMobileConsonantScroll();
     updatePrompt();
   }
 
