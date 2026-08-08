@@ -22,6 +22,9 @@ body {
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+  overflow: hidden;
+  height: 100dvh;
+  width: 100vw;
 }
 
 .mobile-top-nav {
@@ -37,14 +40,16 @@ body {
 .mobile-logo {
   position: absolute;
   left: 0.75rem;
-  top: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
   border: 1px solid #bdbdbd;
-  padding: 0.25rem 0.4rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 2px;
   font-weight: 700;
   font-size: 0.9rem;
   text-decoration: none;
   color: #111;
+  line-height: 1;
 }
 
 .mobile-title {
@@ -58,12 +63,15 @@ body {
 .mobile-hamburger {
   position: absolute;
   right: 0.75rem;
-  top: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0.4rem;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -76,8 +84,8 @@ body {
 
 .mobile-hamburger svg {
   display: block;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
 }
 
 .mobile-nav-drawer {
@@ -183,27 +191,32 @@ body {
 .mobile-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100dvh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .mobile-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0.5rem 1rem 1rem;
-  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  gap: 0.5rem;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .mobile-scroll-chips {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
   gap: 0.5rem;
   overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  padding: 0.25rem 0 0.5rem;
+  overflow-y: auto;
+  padding: 0.5rem;
+  max-height: 200px;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: none;
 }
 
 .mobile-scroll-chips::-webkit-scrollbar {
@@ -211,7 +224,6 @@ body {
 }
 
 .mobile-chip {
-  flex: 0 0 auto;
   scroll-snap-align: start;
   border: 1.5px solid #d0d0d0;
   border-radius: 999px;
@@ -224,6 +236,10 @@ body {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   user-select: none;
   -webkit-user-select: none;
+  justify-self: center;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .mobile-chip.active {
@@ -236,7 +252,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex-wrap: wrap;
 }
 
@@ -288,12 +304,13 @@ body {
 }
 
 .mobile-card-area {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
   min-height: 0;
+  max-height: 50vh;
 }
 
 .mobile-card {
@@ -353,8 +370,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
-  padding: 0.75rem 0 1rem;
+  gap: 1.5rem;
+  padding: 0.5rem 0 0.75rem;
 }
 
 .mobile-bottom-btn {

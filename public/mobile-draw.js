@@ -176,7 +176,7 @@ const MobileDraw = (() => {
       });
       consonantChips.appendChild(chip);
     });
-    consonantChips.scrollLeft = consonantChips.scrollWidth;
+    consonantChips.scrollLeft = 0;
   }
 
   function advancePage(delta) {

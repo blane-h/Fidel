@@ -109,7 +109,7 @@ const MobileStudy = (() => {
       });
       consonantChips.appendChild(chip);
     });
-    consonantChips.scrollLeft = consonantChips.scrollWidth;
+    consonantChips.scrollLeft = 0;
   }
 
   function advanceConsonant(delta) {
