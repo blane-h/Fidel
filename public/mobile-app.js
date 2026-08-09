@@ -3,6 +3,8 @@ const MobileSpell = (() => {
   const fidelByKey = MobileCommon.fidelByKey;
   const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, playWordAudio, openNav, closeNav, initMobileNav } = MobileCommon;
 
+  initMobileNav('mobileNavDrawer', 'mobileNavClose', '.mobile-nav-link', 'mobileHamburger');
+
   const consonantGrid = document.getElementById('mobileConsonantGrid');
   const vowelRow = document.getElementById('mobileVowelRow');
   const latinPrompt = document.getElementById('mobileLatinPrompt');

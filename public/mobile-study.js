@@ -1,6 +1,8 @@
 const MobileStudy = (() => {
   const { fetchAlphabet, playCharacterAudio, openNav, closeNav, initMobileNav } = MobileCommon;
 
+  initMobileNav('mobileNavDrawer', 'mobileNavClose', '.mobile-nav-link', 'mobileHamburger');
+
   const flashcard = document.getElementById('mobileFlashcard');
   const flashcardInner = document.getElementById('mobileFlashcardInner');
   const frontText = document.getElementById('mobileFrontText');
