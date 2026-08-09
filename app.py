@@ -421,6 +421,10 @@ def generate_with_gemini(parts: list) -> dict:
                     last_error = Exception('Gemini quota exceeded')
                     last_error.quota = True
                     continue
+                if response.status_code == 404:
+                    last_error = Exception(f'Gemini model not found: {model}')
+                    last_error.status = 404
+                    continue
                 unsupported_image = bool(__import__('re').search(r'does not support.*image|image.*not supported|cannot read.*image|image input is not supported', error_text, re.I))
                 if unsupported_image:
                     image_input_unsupported_count += 1
