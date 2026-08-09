@@ -13,6 +13,13 @@ from typing import Optional, Dict, Any, List, Tuple
 from flask import Flask, request, jsonify, Response, send_file, send_from_directory
 from flask_cors import CORS
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    load_dotenv('.env.example', override=False)
+except Exception:
+    pass
+
 app = Flask(__name__, static_folder='public', static_url_path='')
 CORS(app)
 
@@ -624,8 +631,8 @@ def api_draw_recognize():
     if not GEMINI_API_KEY:
         return jsonify({'error': 'Gemini API key is not configured.', 'hint': 'Set the GEMINI_API_KEY environment variable.', 'expected': expected}), 503
 
-    base64_data = str(image).replace('data:image/\\w+;base64,', '')
-    reference_base64 = str(data.get('reference', '')).replace('data:image/\\w+;base64,', '') if data.get('reference') else None
+    base64_data = re.sub(r'^data:image/\\w+;base64,', '', str(image))
+    reference_base64 = re.sub(r'^data:image/\\w+;base64,', '', str(data.get('reference', ''))) if data.get('reference') else None
 
     cache_key = simple_hash(f'{base64_data}|{reference_base64 or ""}|{expected}')
     if cache_key in recognize_cache:
@@ -811,7 +818,7 @@ def api_draw_check():
         from ml.model import load_model
         model = load_model()
         if model and features and isinstance(features, list) and len(features) == getattr(model, 'input_size', 436):
-            probability = float(model.predict(features))
+            probability = float(model.predict(features).item()) if hasattr(model.predict(features), 'item') else float(model.predict(features))
             threshold = getattr(model, 'threshold', 0.5) or 0.5
             ambiguity_margin = 0.15
             if probability >= threshold + ambiguity_margin:
