@@ -821,9 +821,13 @@ def api_draw_check():
                 return jsonify({'match': False, 'confidence': probability, 'threshold': threshold, 'expected': expected, 'source': 'model'})
             return jsonify({'match': None, 'confidence': probability, 'threshold': threshold, 'expected': expected, 'source': 'model-ambiguous', 'requireGemini': True})
 
-        return jsonify({'match': None, 'expected': expected, 'source': 'no-model', 'requireGemini': True})
+        reason = 'no-model'
+        if model and (not features or not isinstance(features, list) or len(features) != getattr(model, 'input_size', 436)):
+            reason = f'bad-features (expected {getattr(model, "input_size", 436)}, got {len(features) if isinstance(features, list) else type(features).__name__})'
+        return jsonify({'match': None, 'expected': expected, 'source': reason, 'requireGemini': True})
     except Exception as error:
-        return jsonify({'match': None, 'expected': expected, 'source': 'no-model', 'requireGemini': True})
+        print('[draw/check] error:', error)
+        return jsonify({'match': None, 'expected': expected, 'source': 'error', 'requireGemini': True})
 
 
 @app.route('/api/words/pronunciations/backfill')
@@ -885,6 +889,18 @@ def get_recognize_prompt(expected: str) -> str:
 
 # ---- Startup ----
 
+def _log_model_status():
+    try:
+        from ml.model import load_model
+        model = load_model()
+        if model:
+            print(f'[model] Loaded. threshold={getattr(model, "threshold", None)} input_size={getattr(model, "input_size", None)} metadata={getattr(model, "metadata", None)}')
+        else:
+            print('[model] Not loaded. model/weights.json is missing. Draw page will fall back to local comparison + Gemini.')
+    except Exception as exc:
+        print(f'[model] Failed to load: {exc}')
+
+
 def bootstrap():
     init_db()
     ensure_column('words', 'pronunciation_audio', 'pronunciation_audio BLOB')
@@ -903,6 +919,8 @@ def bootstrap():
         print(f'Character bank ready: {char_summary["total"]} total characters in database.')
     except Exception as error:
         print('Character bank seed skipped:', str(error))
+
+    _log_model_status()
 
 
 def start_server():

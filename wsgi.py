@@ -43,5 +43,13 @@ except Exception as exc:
 # Import the Flask app. PythonAnywhere expects an `application` object.
 from app import app as application  # noqa: E402
 
+# Log deployment-relevant status after the app is loaded.
+try:
+    from ml.model import WEIGHTS_PATH as _WEIGHTS_PATH
+    _model_ok = _WEIGHTS_PATH.exists()
+    logger.info('model weights path: %s (exists=%s)', _WEIGHTS_PATH, _model_ok)
+except Exception as _exc:
+    logger.warning('Could not inspect model status: %s', _exc)
+
 if __name__ == '__main__':
     print('Fidel WSGI app loaded.')
