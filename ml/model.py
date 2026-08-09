@@ -61,7 +61,9 @@ class NeuralNet:
 
     def forward(self, x: np.ndarray):
         h = np.tanh(self.W1 @ x + self.b1)
-        out_sum = float(self.W2 @ h + self.b2[0])
+        out_sum = self.W2 @ h + self.b2[0]
+        # Normalize scalar-like outputs (0-d array, 1-d length-1 array, or python float).
+        out_sum = out_sum.item() if hasattr(out_sum, 'item') else float(out_sum)
         out = _sigmoid(out_sum)
         return h, out
 
@@ -302,12 +304,27 @@ def save_model(net: NeuralNet, metadata: dict):
     WEIGHTS_PATH.write_text(json.dumps(payload))
 
 
+def _weights_are_valid(net: NeuralNet) -> bool:
+    """Return False if any weight/bias is missing, null, or non-finite (NaN/Inf)."""
+    try:
+        for arr in (net.W1, net.b1, net.W2, net.b2):
+            values = np.asarray(arr, dtype=np.float64)
+            if values.size == 0 or not np.all(np.isfinite(values)):
+                return False
+        return True
+    except Exception:
+        return False
+
+
 def load_model():
     if not WEIGHTS_PATH.exists():
         return None
     try:
         payload = json.loads(WEIGHTS_PATH.read_text())
         net = NeuralNet.from_dict(payload['net'])
+        if not _weights_are_valid(net):
+            print('[model] Discarding invalid weights (null/NaN). Falling back to local + Gemini.')
+            return None
         net.threshold = payload.get('metadata', {}).get('threshold', 0.5)
         net.metadata = payload.get('metadata', {})
         return net
