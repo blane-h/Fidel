@@ -12,11 +12,6 @@ from typing import Optional, Dict, Any, List, Tuple
 
 from flask import Flask, request, jsonify, Response, send_file, send_from_directory
 from flask_cors import CORS
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-load_dotenv('.env.example', override=False)
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 CORS(app)
@@ -403,7 +398,7 @@ def simple_hash(input_str: str) -> str:
     return str(h & 0xFFFFFFFF)
 
 
-async def generate_with_gemini(parts: list) -> dict:
+def generate_with_gemini(parts: list) -> dict:
     last_error = None
     image_input_unsupported_count = 0
 

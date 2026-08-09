@@ -503,6 +503,31 @@ function setMode(mode) {
 drawModeBtn.addEventListener('click', () => setMode('draw'));
 autoModeBtn.addEventListener('click', () => setMode('auto'));
 
+trainModelBtn.addEventListener('click', async () => {
+  if (!trainModelBtn) return;
+  trainModelBtn.disabled = true;
+  trainModelBtn.textContent = 'Training...';
+  try {
+    const response = await fetch('/api/model/train', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ epochs: 2000, learningRate: 0.005, l2: 0.0001, valFraction: 0.15 })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.error || 'Training failed.');
+    }
+    statusMessage.textContent = 'Model trained! ' + (data.sampleCount || 0) + ' samples. Threshold: ' + (data.threshold != null ? data.threshold.toFixed(2) : 'n/a') + ' | Train: ' + (data.train?.accuracy != null ? Math.round(data.train.accuracy * 100) + '%' : 'n/a' ) + ' | Val: ' + (data.val?.accuracy != null ? Math.round(data.val.accuracy * 100) + '%' : 'n/a' );
+    statusMessage.className = 'status success';
+  } catch (error) {
+    statusMessage.textContent = error.message;
+    statusMessage.className = 'status error';
+  } finally {
+    trainModelBtn.disabled = false;
+    trainModelBtn.textContent = 'Train model';
+  }
+});
+
 // ---- Init -------------------------------------------------------------------
 async function init() {
   await loadCharacterBank();
