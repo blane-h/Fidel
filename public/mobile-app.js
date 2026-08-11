@@ -1,7 +1,7 @@
 const MobileSpell = (() => {
   const qwertyRows = MobileCommon.qwertyRows;
   const fidelByKey = MobileCommon.fidelByKey;
-  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, playWordAudio, openNav, closeNav, initMobileNav } = MobileCommon;
+  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, fetchLongestWord, playWordAudio, openNav, closeNav, initMobileNav } = MobileCommon;
 
   initMobileNav('mobileNavDrawer', 'mobileNavClose', '.mobile-nav-link', 'mobileHamburger');
 
@@ -10,9 +10,10 @@ const MobileSpell = (() => {
   const latinPrompt = document.getElementById('mobileLatinPrompt');
   const translationText = document.getElementById('mobileTranslationText');
   const answerRows = document.getElementById('mobileAnswerRows');
+  const slotsArea = document.getElementById('slotsArea');
+  const mobileContent = document.querySelector('.mobile-content');
   const statusMessage = document.getElementById('mobileStatusMessage');
   const soundBtn = document.getElementById('mobileSoundBtn');
-  const backspaceBtn = document.getElementById('mobileBackspaceBtn');
   const enterBtn = document.getElementById('mobileEnterBtn');
   const newWordBtn = document.getElementById('mobileNewWordBtn');
   const revealBtn = document.getElementById('mobileRevealBtn');
@@ -23,6 +24,7 @@ const MobileSpell = (() => {
   let currentWord = null;
   let answer = [];
   let cursorPosition = 0;
+  let firstLoad = true;
   let currentAudio = null;
   let activeConsonantBtn = null;
   let showingFidel = false;
@@ -35,40 +37,59 @@ const MobileSpell = (() => {
     const length = currentWord?.amharic?.length ?? 0;
     if (length === 0) {
       const row = document.createElement('div');
-      row.className = 'mobile-answer-line';
+      row.className = 'mobile-answer-row';
       row.style.opacity = '0.4';
       row.textContent = '...';
       answerRows.appendChild(row);
       return;
     }
 
-    for (let i = 0; i < length; i += 1) {
+    const slotsPerRow = 5;
+    const rowCount = Math.ceil(length / slotsPerRow);
+    for (let r = 0; r < rowCount; r += 1) {
       const row = document.createElement('div');
-      row.className = 'mobile-answer-line';
-      row.dataset.index = i;
-      if (i === 0) {
-        row.style.borderTop = '2px solid #545454';
+      row.className = 'mobile-answer-row';
+      const start = r * slotsPerRow;
+      const end = Math.min(start + slotsPerRow, length);
+      for (let i = start; i < end; i += 1) {
+        const slot = document.createElement('span');
+        slot.className = 'mobile-answer-slot';
+        slot.dataset.index = i;
+        slot.addEventListener('click', (evt) => {
+          evt.stopPropagation();
+          cursorPosition = i;
+          renderAnswer();
+        });
+        row.appendChild(slot);
       }
-      row.addEventListener('click', () => {
-        cursorPosition = i;
-        renderAnswer();
-      });
       answerRows.appendChild(row);
     }
     updateAnswerDisplay();
+    if (slotsArea) {
+      slotsArea.classList.toggle("single-row", rowCount === 1);
+      slotsArea.classList.toggle("two-rows", rowCount === 2);
+      slotsArea.classList.toggle("multi-row", rowCount >= 3);
+      if (mobileContent) {
+        mobileContent.classList.toggle("word-lower", rowCount === 1 || rowCount === 2);
+      }
+    }
   }
 
   function updateAnswerDisplay() {
-    const rows = answerRows.querySelectorAll('.mobile-answer-line');
-    rows.forEach((row, i) => {
-      row.textContent = answer[i] || '';
-      row.classList.toggle('cursor', i === cursorPosition);
-      const cursor = row.querySelector('.cursor');
-      if (cursor) cursor.remove();
+    const slots = answerRows.querySelectorAll('.mobile-answer-slot');
+    slots.forEach((slot) => {
+      const i = Number(slot.dataset.index);
+      slot.textContent = answer[i] || '';
+      let cursor = slot.querySelector('.cursor');
+      if (!cursor) {
+        cursor = document.createElement('span');
+        cursor.className = 'cursor hidden';
+        slot.insertBefore(cursor, slot.firstChild);
+      }
       if (i === cursorPosition && !answer[i]) {
-        const cursorEl = document.createElement('span');
-        cursorEl.className = 'cursor';
-        row.appendChild(cursorEl);
+        cursor.classList.remove('hidden');
+      } else {
+        cursor.classList.add('hidden');
       }
     });
   }
@@ -167,30 +188,29 @@ const MobileSpell = (() => {
 
   function renderConsonants() {
     consonantGrid.innerHTML = '';
-    const rows = [
-      ['ሀ', 'ለ', 'ሐ', 'መ', 'ሠ', 'ረ', 'ሰ', 'ሸ'],
-      ['ቀ', 'በ', 'ቨ', 'ተ', 'ቸ', 'ኀ', 'ነ', 'ኘ'],
-      ['አ', 'ከ', 'ኸ', 'ወ', 'ዐ', 'ዘ', 'ዠ', 'የ'],
-      ['ደ', 'ጀ', 'ገ', 'ጠ', 'ጨ', 'ጰ', 'ጸ', 'ፀ'],
-      ['ፈ', 'ፐ']
+    const rowKeys = [
+      [...qwertyRows[0]],
+      [...qwertyRows[1]],
+      [...qwertyRows[2]]
     ];
-    rows.forEach((rowChars) => {
+    rowKeys.forEach((keys, rowIndex) => {
       const row = document.createElement('div');
       row.className = 'mobile-key-row';
-      rowChars.forEach((fidel) => {
-        const entry = fidelByKey[Object.keys(fidelByKey).find(k => fidelByKey[k].fidel === fidel)] || { latin: '' };
+      keys.forEach((key) => {
+        const entry = fidelByKey[key];
+        if (!entry) return;
         const btn = document.createElement('button');
         btn.className = 'mobile-key-btn';
         btn.type = 'button';
-        btn.dataset.fidel = fidel;
-        btn.textContent = fidel;
+        btn.dataset.key = key;
+        btn.innerHTML = `<span class="fidel-char">${entry.fidel}</span>`;
         btn.addEventListener('click', () => {
-          const idx = alphabet.findIndex((family) => family.consonant === fidel);
+          const idx = alphabet.findIndex((family) => family.consonant === entry.fidel);
           if (idx !== -1) {
             setActiveConsonantBtn(btn);
             if (revealMode) {
               renderVowels(idx);
-              handleRevealConsonantClick(fidel);
+              handleRevealConsonantClick(entry.fidel);
             } else {
               if (selectedFamilyIndex !== idx) {
                 renderVowels(idx);
@@ -198,14 +218,23 @@ const MobileSpell = (() => {
             }
           } else {
             if (revealMode) {
-              handleRevealPunctuationClick(fidel);
+              handleRevealPunctuationClick(entry.fidel);
             } else {
-              addCharacter(fidel);
+              addCharacter(entry.fidel);
             }
           }
         });
         row.appendChild(btn);
       });
+      if (rowIndex === 2) {
+        const backspaceBtn = document.createElement('button');
+        backspaceBtn.className = 'mobile-key-btn mobile-backspace-key';
+        backspaceBtn.type = 'button';
+        backspaceBtn.setAttribute('aria-label', 'Backspace');
+        backspaceBtn.innerHTML = '<span class="fidel-char">⌫</span>';
+        backspaceBtn.addEventListener('click', removeCharacter);
+        row.appendChild(backspaceBtn);
+      }
       consonantGrid.appendChild(row);
     });
   }
@@ -247,7 +276,8 @@ const MobileSpell = (() => {
     }
     clearRevealClasses();
     try {
-      const word = await fetchRandomWord();
+      const word = firstLoad ? await fetchLongestWord() : await fetchRandomWord();
+      firstLoad = false;
       currentWord = word;
       answer = [];
       cursorPosition = 0;
@@ -316,7 +346,6 @@ const MobileSpell = (() => {
     }
   });
 
-  backspaceBtn.addEventListener('click', removeCharacter);
   enterBtn.addEventListener('click', submitAnswer);
 
   newWordBtn.addEventListener('click', () => {
@@ -345,16 +374,18 @@ const MobileSpell = (() => {
     if (revealSequence.length === 0 || revealIndex >= revealSequence.length) return;
     clearRevealClasses();
     const item = revealSequence[revealIndex];
-    if (item.type === 'consonant') {
-      consonantGrid.querySelectorAll('.mobile-key-btn').forEach((b) => {
-        if (b.dataset.fidel === item.consonant) {
-          const colors = ['revealed-green', 'revealed-yellow', 'revealed-red'];
-          const colorClass = colors[revealIndex % 3];
-          b.classList.add(colorClass);
-          b.dataset.revealColor = colorClass;
-        }
-      });
-    }
+    const colors = ['revealed-green', 'revealed-yellow', 'revealed-red'];
+    const colorClass = colors[revealIndex % 3];
+    consonantGrid.querySelectorAll('.mobile-key-btn').forEach((b) => {
+      const fidelChar = b.querySelector('.fidel-char')?.textContent || '';
+      if (item.type === 'consonant' && fidelChar === item.consonant) {
+        b.classList.add(colorClass);
+        b.dataset.revealColor = colorClass;
+      } else if (item.type === 'punctuation' && fidelChar === item.char) {
+        b.classList.add(colorClass);
+        b.dataset.revealColor = colorClass;
+      }
+    });
   }
 
   function revealAnswer() {

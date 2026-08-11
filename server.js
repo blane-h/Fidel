@@ -615,6 +615,25 @@ app.get('/api/words/random', wordsRateLimiter, (_req, res) => {
   });
 });
 
+app.get('/api/words/longest', (_req, res) => {
+  db.get(
+    `SELECT id, latin, amharic, translation,
+            CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
+     FROM words
+     ORDER BY LENGTH(amharic) DESC, id ASC
+     LIMIT 1`,
+    (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: 'Unable to load word.' });
+      }
+      if (!row) {
+        return res.status(404).json({ error: 'No words found.' });
+      }
+      return res.json(row);
+    }
+  );
+});
+
 app.get('/api/words/:id/audio', wordsRateLimiter, (req, res) => {
   const wordId = Number.parseInt(req.params.id, 10);
 

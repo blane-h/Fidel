@@ -1,8 +1,8 @@
 const MobileCommon = (() => {
   const qwertyRows = [
-    ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-    ['z', 'x', 'c', 'v', 'b', 'n', 'm']
+    ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\'],
+    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'"],
+    ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', ':']
   ];
 
   const fidelByKey = {
@@ -16,6 +16,9 @@ const MobileCommon = (() => {
     i: { fidel: 'ቀ', latin: 'qa' },
     o: { fidel: 'በ', latin: 'ba' },
     p: { fidel: 'ቨ', latin: 'va' },
+    '[': { fidel: 'ተ', latin: 'ta' },
+    ']': { fidel: 'ቸ', latin: 'cha' },
+    '\\': { fidel: 'ኀ', latin: 'xa' },
     a: { fidel: 'ነ', latin: 'na' },
     s: { fidel: 'ኘ', latin: 'nya' },
     d: { fidel: 'አ', latin: 'a' },
@@ -25,6 +28,8 @@ const MobileCommon = (() => {
     j: { fidel: 'ዐ', latin: 'a' },
     k: { fidel: 'ዘ', latin: 'za' },
     l: { fidel: 'ዠ', latin: 'za' },
+    ';': { fidel: 'የ', latin: 'ya' },
+    "'": { fidel: 'ደ', latin: 'da' },
     z: { fidel: 'ጀ', latin: 'ja' },
     x: { fidel: 'ገ', latin: 'ga' },
     c: { fidel: 'ጠ', latin: 'ta' },
@@ -32,6 +37,10 @@ const MobileCommon = (() => {
     b: { fidel: 'ጰ', latin: 'pa' },
     n: { fidel: 'ጸ', latin: 'sa' },
     m: { fidel: 'ፀ', latin: 'sa' },
+    ',': { fidel: 'ፈ', latin: 'fa' },
+    '.': { fidel: 'ፐ', latin: 'pa' },
+    '/': { fidel: 'ሐ', latin: 'ha' },
+    ':': { fidel: '፡', latin: ':' }
   };
 
   function normalizeAmharicChar(char) {
@@ -76,6 +85,15 @@ const MobileCommon = (() => {
 
   async function fetchRandomWord() {
     const response = await fetch('/api/words/random');
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data?.error || 'Failed to load word.');
+    }
+    return response.json();
+  }
+
+  async function fetchLongestWord() {
+    const response = await fetch('/api/words/longest');
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       throw new Error(data?.error || 'Failed to load word.');
@@ -176,6 +194,7 @@ const MobileCommon = (() => {
     getAlternateFidelForms,
     fetchAlphabet,
     fetchRandomWord,
+    fetchLongestWord,
     playCharacterAudio,
     playWordAudio,
     addGestureUnlock,
