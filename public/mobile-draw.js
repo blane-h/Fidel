@@ -1,7 +1,5 @@
 const MobileDraw = (() => {
-  const { fetchAlphabet, playCharacterAudio, openNav, closeNav, initMobileNav, addGestureUnlock } = MobileCommon;
-
-  initMobileNav('mobileNavDrawer', 'mobileNavClose', '.mobile-nav-link', 'mobileHamburger');
+  const { fetchAlphabet, playCharacterAudio, addGestureUnlock } = MobileCommon;
 
   const drawCanvas = document.getElementById('mobileDrawCanvas');
   const ctx = drawCanvas.getContext('2d');

@@ -1,9 +1,7 @@
 const MobileSpell = (() => {
   const qwertyRows = MobileCommon.qwertyRows;
   const fidelByKey = MobileCommon.fidelByKey;
-  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, fetchLongestWord, playWordAudio, openNav, closeNav, initMobileNav } = MobileCommon;
-
-  initMobileNav('mobileNavDrawer', 'mobileNavClose', '.mobile-nav-link', 'mobileHamburger');
+  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, fetchLongestWord, playWordAudio } = MobileCommon;
 
   const consonantGrid = document.getElementById('mobileConsonantGrid');
   const vowelRow = document.getElementById('mobileVowelRow');

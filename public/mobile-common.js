@@ -146,47 +146,6 @@ const MobileCommon = (() => {
     }
   }
 
-  function openNav(drawer) {
-    drawer.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeNav(drawer) {
-    drawer.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  function initMobileNav(drawerId, closeBtnId, linkSelector, hamburgerId) {
-    const drawer = document.getElementById(drawerId);
-    if (!drawer) return;
-    const closeBtn = document.getElementById(closeBtnId);
-    const backdrop = drawer.querySelector('.mobile-nav-backdrop');
-    const links = drawer.querySelectorAll(linkSelector);
-    const hamburger = hamburgerId ? document.getElementById(hamburgerId) : null;
-
-    const open = () => {
-      openNav(drawer);
-      if (hamburger) hamburger.setAttribute('aria-expanded', 'true');
-    };
-
-    const close = () => {
-      closeNav(drawer);
-      if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
-    };
-
-    if (hamburger) hamburger.addEventListener('click', open);
-    if (closeBtn) closeBtn.addEventListener('click', close);
-    if (backdrop) backdrop.addEventListener('click', close);
-
-    links.forEach((link) => {
-      link.addEventListener('click', close);
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') closeNav(drawer);
-    });
-  }
-
   return {
     qwertyRows,
     fidelByKey,
@@ -198,10 +157,7 @@ const MobileCommon = (() => {
     playCharacterAudio,
     playWordAudio,
     addGestureUnlock,
-    safePlay,
-    openNav,
-    closeNav,
-    initMobileNav
+    safePlay
   };
 })();
 
