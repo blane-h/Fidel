@@ -311,6 +311,11 @@ body {
   transform: scale(0.95);
 }
 
+.mobile-icon-btn.active {
+  background: #7f8084;
+  color: white;
+}
+
 .mobile-icon-btn svg,
 .mobile-icon-btn img {
   display: block;
