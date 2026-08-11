@@ -406,7 +406,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  padding: 1rem 0 1.25rem;
+  padding: 1rem 0 0.5rem;
 }
 
 .mobile-bottom-btn {
@@ -432,8 +432,8 @@ body {
 .mobile-tools {
   display: flex;
   justify-content: center;
-  gap: 0.25rem;
-  padding-top: 0.25rem;
+  gap: 1rem;
+  padding-top: 0.75rem;
   flex-wrap: wrap;
 }
 
