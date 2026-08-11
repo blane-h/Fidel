@@ -274,7 +274,16 @@ const MobileSpell = (() => {
     }
     clearRevealClasses();
     try {
-      const word = firstLoad ? await fetchLongestWord() : await fetchRandomWord();
+      let word;
+      if (firstLoad) {
+        try {
+          word = await fetchLongestWord();
+        } catch (_longestError) {
+          word = await fetchRandomWord();
+        }
+      } else {
+        word = await fetchRandomWord();
+      }
       firstLoad = false;
       currentWord = word;
       answer = [];
