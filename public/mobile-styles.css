@@ -363,8 +363,6 @@ body {
   user-select: none;
   -webkit-user-select: none;
   position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.6s;
 }
 
 .mobile-card-inner {
@@ -373,6 +371,7 @@ body {
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.6s;
+  will-change: transform;
 }
 
 .mobile-card-inner.flipped {
@@ -382,6 +381,7 @@ body {
 .mobile-card-face {
   position: absolute;
   inset: 0;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   display: flex;
   align-items: center;
