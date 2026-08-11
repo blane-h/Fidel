@@ -7,8 +7,9 @@
   'use strict';
 
   // Determine the base path. On GitHub Pages the repo is served under "/Fidel/".
-  // We derive it from the current script src, which is reliable.
-  // Fallbacks: <base href> tag, or a trailing slash path.
+  // We derive it from the current page pathname, which is reliable whether
+  // base.js is loaded as "/base.js" or "/Fidel/base.js".
+  // Overrides: <base href> tag, or an explicit subpath in base.js's own src.
   function detectBasePath() {
     // Prefer an explicit <base href> if present.
     const baseTag = document.querySelector('base[href]');
@@ -16,7 +17,7 @@
       return baseTag.getAttribute('href');
     }
 
-    // Derive from this script's src attribute.
+    // Derive from this script's src attribute when it reveals a subpath.
     const scripts = document.getElementsByTagName('script');
     for (let i = 0; i < scripts.length; i += 1) {
       const src = scripts[i].getAttribute('src') || '';
@@ -25,11 +26,16 @@
         let base = src.slice(0, idx);
         // Ensure it ends with a slash.
         if (base && !base.endsWith('/')) base += '/';
-        return base;
+        // Only trust script-derived base when it is a real subpath.
+        // A root-relative "/base.js" yields an empty base here, so we fall
+        // back to location.pathname instead.
+        if (base && base !== '/') {
+          return base;
+        }
       }
     }
 
-    // Fallback: use the current path up to the last slash.
+    // Fallback: use the current page path up to the last slash.
     const path = global.location.pathname;
     const lastSlash = path.lastIndexOf('/');
     return lastSlash === -1 ? '/' : path.slice(0, lastSlash + 1);

@@ -78,13 +78,13 @@ const MobileCommon = (() => {
   }
 
   async function fetchAlphabet() {
-    const response = await fetch('/api/alphabet');
+    const response = await fetch(FidelBase.url('/api/alphabet'));
     if (!response.ok) throw new Error('Failed to load alphabet');
     return response.json();
   }
 
   async function fetchRandomWord() {
-    const response = await fetch('/api/words/random');
+    const response = await fetch(FidelBase.url('/api/words/random'));
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       throw new Error(data?.error || 'Failed to load word.');
@@ -93,7 +93,7 @@ const MobileCommon = (() => {
   }
 
   async function fetchLongestWord() {
-    const response = await fetch('/api/words/longest');
+    const response = await fetch(FidelBase.url('/api/words/longest'));
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       throw new Error(data?.error || 'Failed to load word.');
@@ -102,14 +102,14 @@ const MobileCommon = (() => {
   }
 
   async function playCharacterAudio(fidel) {
-    const response = await fetch('/api/characters/audio?fidel=' + encodeURIComponent(fidel));
+    const response = await fetch(FidelBase.url('/api/characters/audio?fidel=' + encodeURIComponent(fidel)));
     if (!response.ok) return null;
     const blob = await response.blob();
     return URL.createObjectURL(blob);
   }
 
   async function playWordAudio(wordId) {
-    const response = await fetch('/api/words/' + wordId + '/audio');
+    const response = await fetch(FidelBase.url('/api/words/' + wordId + '/audio'));
     if (!response.ok) return null;
     const blob = await response.blob();
     return URL.createObjectURL(blob);

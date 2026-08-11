@@ -98,7 +98,7 @@ function updateCard() {
 async function playSound() {
   if (!currentCharacter) return;
   try {
-    const response = await fetch('/api/characters/audio?fidel=' + encodeURIComponent(currentCharacter.fidel));
+    const response = await fetch(FidelBase.url('/api/characters/audio?fidel=' + encodeURIComponent(currentCharacter.fidel)));
     if (!response.ok) return;
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
@@ -477,7 +477,7 @@ document.addEventListener('keyup', (event) => {
 
 async function loadAlphabet() {
   try {
-    const response = await fetch('/api/alphabet');
+    const response = await fetch(FidelBase.url('/api/alphabet'));
     if (!response.ok) return;
     const data = await response.json();
     alphabet = data;

@@ -1,5 +1,5 @@
 const MobileStudy = (() => {
-  const { fetchAlphabet, playCharacterAudio, addGestureUnlock } = MobileCommon;
+  const { fetchAlphabet, playCharacterAudio } = MobileCommon;
 
   const flashcard = document.getElementById('mobileFlashcard');
   const flashcardInner = document.getElementById('mobileFlashcardInner');
@@ -359,7 +359,14 @@ const MobileStudy = (() => {
   });
 
   async function init() {
-    alphabet = await fetchAlphabet();
+    try {
+      alphabet = await fetchAlphabet();
+    } catch (error) {
+      console.error('MobileStudy init failed:', error);
+      frontText.textContent = 'Failed to load alphabet.';
+      backText.textContent = '';
+      return;
+    }
     currentConsonantIndex = 0;
     currentVowelIndex = 0;
     renderConsonantBoxes();
@@ -372,5 +379,9 @@ const MobileStudy = (() => {
     }
   }
 
-  init();
+  init().catch((error) => {
+    console.error('MobileStudy init failed:', error);
+    frontText.textContent = 'Failed to load data.';
+    backText.textContent = '';
+  });
 })();

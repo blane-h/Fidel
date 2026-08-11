@@ -359,7 +359,7 @@ async function loadWord() {
   document.querySelectorAll('.vowel-btn').forEach(btn => {
     btn.classList.remove('revealed-correct');
   });
-  const response = await fetch('/api/words/random');
+  const response = await fetch(FidelBase.url('/api/words/random'));
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     statusMessage.textContent = data?.error || 'Failed to load word.';
@@ -392,7 +392,7 @@ async function loadWord() {
   currentAudio = null;
 
   if (word?.id) {
-    currentAudio = new Audio(`/api/words/${word.id}/audio`);
+    currentAudio = new Audio(FidelBase.url(`/api/words/${word.id}/audio`));
     currentAudio.preload = 'auto';
     currentAudio.load();
     currentAudio.play().catch(() => {});
@@ -418,7 +418,7 @@ fidelToggleBtn.addEventListener('click', () => {
 });
 
 async function init() {
-  const response = await fetch('/api/alphabet');
+  const response = await fetch(FidelBase.url('/api/alphabet'));
   alphabet = await response.json();
 
   renderConsonants();

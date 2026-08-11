@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fidel Draw</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="top-nav">
       <div class="logo" aria-label="Fidel logo">ፊደል</div>
       <nav>
-        <a href="/study">Study</a>
-        <a href="/">Spell</a>
-        <a href="/draw" class="active">Draw</a>
-        <a href="/train">Train</a>
+        <a href="study">Study</a>
+        <a href=".">Spell</a>
+        <a href="draw" class="active">Draw</a>
+        <a href="train">Train</a>
       </nav>
     </header>
 
@@ -53,7 +53,7 @@
             </svg>
           </button>
           <button id="shuffleBtn" class="icon-btn control-btn draw-controls-icon" aria-label="Shuffle characters">
-            <img src="/shuffle-icon.png" alt="Shuffle" width="48" height="48" />
+            <img src="shuffle-icon.png" alt="Shuffle" width="48" height="48" />
           </button>
         </div>
       </section>
@@ -100,8 +100,9 @@
       </div>
     </main>
 
-    <script src="/features.js" defer></script>
-    <script src="/draw.js" defer></script>
+    <script src="base.js" defer></script>
+    <script src="features.js" defer></script>
+    <script src="draw.js" defer></script>
     <div id="feedbackOverlay" class="feedback-overlay" hidden>
       <div class="feedback-content">
         <span id="feedbackIcon" class="feedback-icon"></span>

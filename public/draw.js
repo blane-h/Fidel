@@ -760,7 +760,7 @@ async function checkWithModel(imageData, referenceImage) {
       features = Array.from(result.vector);
     }
 
-    const response = await fetch('/api/draw/check', {
+    const response = await fetch(FidelBase.url('/api/draw/check'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -858,7 +858,7 @@ async function submitDrawing() {
       downscaleDataUrl(referenceImage)
     ]);
 
-    const response = await fetch('/api/draw/recognize', {
+      const response = await fetch(FidelBase.url('/api/draw/recognize'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1015,7 +1015,7 @@ async function playSound() {
   }
 
   try {
-    const response = await fetch(`/api/characters/audio?fidel=${encodeURIComponent(currentCharacter.fidel)}`);
+    const response = await fetch(FidelBase.url(`/api/characters/audio?fidel=${encodeURIComponent(currentCharacter.fidel)}`));
     if (!response.ok) {
       return;
     }
@@ -1109,7 +1109,7 @@ document.addEventListener('keyup', (event) => {
 
 async function loadAlphabet() {
   try {
-    const response = await fetch('/api/alphabet');
+    const response = await fetch(FidelBase.url('/api/alphabet'));
     if (!response.ok) {
       throw new Error('Failed to load alphabet');
     }

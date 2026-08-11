@@ -131,7 +131,7 @@ function loadCharacter(char) {
 
 async function loadRandomCharacter() {
   try {
-    const response = await fetch('/api/draw/random');
+    const response = await fetch(FidelBase.url('/api/draw/random'));
     const char = await response.json();
     loadCharacter(char);
   } catch (_error) {
@@ -142,7 +142,7 @@ async function loadRandomCharacter() {
 
 async function loadCharacterBank() {
   try {
-    const response = await fetch('/api/alphabet');
+    const response = await fetch(FidelBase.url('/api/alphabet'));
     const alphabet = await response.json();
     const chars = [];
     alphabet.forEach((family) => {
@@ -206,7 +206,7 @@ function renderReferenceGlyph() {
 // ---- Submitting a labeled sample --------------------------------------------
 async function postSample(expected, image, reference, label, source) {
   const features = await F.buildFeatures(image, reference);
-  const response = await fetch('/api/train/sample', {
+  const response = await fetch(FidelBase.url('/api/train/sample'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -508,7 +508,7 @@ trainModelBtn.addEventListener('click', async () => {
   trainModelBtn.disabled = true;
   trainModelBtn.textContent = 'Training...';
   try {
-    const response = await fetch('/api/model/train', {
+      const response = await fetch(FidelBase.url('/api/model/train'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ epochs: 2000, learningRate: 0.005, l2: 0.0001, valFraction: 0.15 })

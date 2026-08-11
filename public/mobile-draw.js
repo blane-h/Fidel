@@ -644,7 +644,7 @@ const MobileDraw = (() => {
         const result = await F.buildFeatures(imageData, referenceImage);
         features = Array.from(result.vector);
       }
-      const response = await fetch('/api/draw/check', {
+      const response = await fetch(FidelBase.url('/api/draw/check'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: imageData, reference: referenceImage, expected: currentCharacter.fidel, features })
@@ -720,7 +720,7 @@ const MobileDraw = (() => {
         downscaleDataUrl(imageData),
         downscaleDataUrl(referenceImage)
       ]);
-      const response = await fetch('/api/draw/recognize', {
+      const response = await fetch(FidelBase.url('/api/draw/recognize'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: smallImage, reference: smallReference, expected: currentCharacter.fidel })
