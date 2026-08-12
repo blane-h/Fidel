@@ -378,7 +378,7 @@ const MobileDraw = (() => {
     const totalPixels = canvasWidth * canvasHeight;
     const coverage = inkedPixels / totalPixels;
     if (coverage < MIN_INK_COVERAGE) {
-      return { valid: false, reason: 'Your drawing is blank or too faint. Please draw the character.' };
+      return { valid: false, reason: 'Drawing is either blank or not visible. Please try again' };
     }
 
     const bboxWidth = maxX - minX + 1;
@@ -615,8 +615,9 @@ const MobileDraw = (() => {
 
   let lastSubmitTime = 0;
   const SUBMIT_COOLDOWN_MS = 1200;
+  const FEEDBACK_DISPLAY_MS = 1000;
 
-  function showFeedback(isCorrect, duration = 1500) {
+  function showFeedback(isCorrect) {
     const icon = document.getElementById('mobileFeedbackIcon');
     const text = document.getElementById('mobileFeedbackText');
     if (!icon || !text) return;
@@ -633,7 +634,7 @@ const MobileDraw = (() => {
       setTimeout(() => {
         feedbackOverlay.hidden = true;
       }, 200);
-    }, duration);
+    }, FEEDBACK_DISPLAY_MS);
   }
 
   async function checkWithModel(imageData, referenceImage) {
@@ -686,34 +687,28 @@ const MobileDraw = (() => {
       return;
     }
 
+    statusMessage.textContent = '';
+    statusMessage.className = 'mobile-status';
+
     const imageData = drawCanvas.toDataURL('image/png');
     const referenceImage = renderReferenceImage();
 
     const modelResult = await checkWithModel(imageData, referenceImage);
     if (modelResult.verdict === 'match') {
-      statusMessage.textContent = 'Correct! Great job. (model ' + Math.round((modelResult.confidence || 0) * 100) + '%)';
-      statusMessage.className = 'mobile-status success';
       showFeedback(true);
       advanceCharacter();
       return;
     }
     if (modelResult.verdict === 'no-match') {
-      statusMessage.textContent = 'Not quite. Try again.';
-      statusMessage.className = 'mobile-status error';
       showFeedback(false);
       return;
     }
 
     const local = localCompare(imageData, referenceImage);
     if (local.verdict === 'no-match') {
-      statusMessage.textContent = 'Not quite. Try again.';
-      statusMessage.className = 'mobile-status error';
       showFeedback(false);
       return;
     }
-
-    statusMessage.textContent = 'Checking with Gemini...';
-    statusMessage.className = 'mobile-status checking';
 
     try {
       const [smallImage, smallReference] = await Promise.all([
@@ -738,28 +733,18 @@ const MobileDraw = (() => {
         const VERY_HIGH_SHAPE = 0.85;
         const veryConfidentMatch = local.overlap > VERY_HIGH_OVERLAP || local.shape > VERY_HIGH_SHAPE;
         if (veryConfidentMatch) {
-          statusMessage.textContent = data.message || 'Correct (Gemini unavailable, but local comparison is very confident).';
-          statusMessage.className = 'mobile-status success';
           showFeedback(true);
           advanceCharacter();
         } else {
-          statusMessage.textContent = 'Not quite. Try again.';
-          statusMessage.className = 'mobile-status error';
           showFeedback(false);
         }
       } else if (data.match) {
-        statusMessage.textContent = 'Correct! Great job. (Gemini)';
-        statusMessage.className = 'mobile-status success';
         showFeedback(true);
         advanceCharacter();
       } else {
-        statusMessage.textContent = 'Not quite. Try again.';
-        statusMessage.className = 'mobile-status error';
         showFeedback(false);
       }
     } catch (_error) {
-      statusMessage.textContent = 'Unable to check drawing.';
-      statusMessage.className = 'mobile-status error';
       showFeedback(false);
     }
   }

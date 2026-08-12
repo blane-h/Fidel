@@ -670,10 +670,6 @@ h2 {
   color: white;
 }
 
-.status.checking {
-  color: var(--muted);
-}
-
 /* ===== Draw Feedback Overlay ===== */
 .feedback-overlay {
   position: fixed;

@@ -729,8 +729,9 @@ function downscaleDataUrl(dataUrl, maxSize = 256) {
 
 let lastSubmitTime = 0;
 const SUBMIT_COOLDOWN_MS = 1200;
+const FEEDBACK_DISPLAY_MS = 1500;
 
-function showFeedback(isCorrect, duration = 1500) {
+function showFeedback(isCorrect) {
   const overlay = document.getElementById('feedbackOverlay');
   const icon = document.getElementById('feedbackIcon');
   const text = document.getElementById('feedbackText');
@@ -748,7 +749,7 @@ function showFeedback(isCorrect, duration = 1500) {
     setTimeout(() => {
       overlay.hidden = true;
     }, 200);
-  }, duration);
+  }, FEEDBACK_DISPLAY_MS);
 }
 
 async function checkWithModel(imageData, referenceImage) {
@@ -820,22 +821,21 @@ async function submitDrawing() {
     return;
   }
 
+  statusMessage.textContent = '';
+  statusMessage.className = 'status';
+
   const imageData = drawCanvas.toDataURL('image/png');
   const referenceImage = renderReferenceImage();
 
   const modelResult = await checkWithModel(imageData, referenceImage);
   if (modelResult.verdict === 'match') {
     console.log('[check] model says match', modelResult.confidence);
-    statusMessage.textContent = `Correct! Great job. (model ${Math.round(modelResult.confidence * 100)}%)`;
-    statusMessage.className = 'status success';
     showFeedback(true);
     advanceCharacter();
     return;
   }
   if (modelResult.verdict === 'no-match') {
     console.log('[check] model says no-match', modelResult.confidence);
-    statusMessage.textContent = 'Not quite. Try again.';
-    statusMessage.className = 'status error';
     showFeedback(false);
     return;
   }
@@ -843,14 +843,9 @@ async function submitDrawing() {
   const local = localCompare(imageData, referenceImage);
   if (local.verdict === 'no-match') {
     console.log('[check] local says no-match', local.overlap, local.shape);
-    statusMessage.textContent = 'Not quite. Try again.';
-    statusMessage.className = 'status error';
     showFeedback(false);
     return;
   }
-
-  statusMessage.textContent = 'Checking with Gemini...';
-  statusMessage.className = 'status checking';
 
   try {
     const [smallImage, smallReference] = await Promise.all([
@@ -883,28 +878,18 @@ async function submitDrawing() {
       const VERY_HIGH_SHAPE = 0.85;
       const veryConfidentMatch = local.overlap > VERY_HIGH_OVERLAP || local.shape > VERY_HIGH_SHAPE;
       if (veryConfidentMatch) {
-        statusMessage.textContent = data.message || 'Correct (Gemini unavailable, but local comparison is very confident).';
-        statusMessage.className = 'status success';
         showFeedback(true);
         advanceCharacter();
       } else {
-        statusMessage.textContent = 'Not quite. Try again.';
-        statusMessage.className = 'status error';
         showFeedback(false);
       }
     } else if (data.match) {
-      statusMessage.textContent = 'Correct! Great job. (Gemini)';
-      statusMessage.className = 'status success';
       showFeedback(true);
       advanceCharacter();
     } else {
-      statusMessage.textContent = 'Not quite. Try again.';
-      statusMessage.className = 'status error';
       showFeedback(false);
     }
   } catch (_error) {
-    statusMessage.textContent = 'Unable to check drawing.';
-    statusMessage.className = 'status error';
     showFeedback(false);
   }
 }

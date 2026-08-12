@@ -287,7 +287,25 @@ body {
   justify-content: center;
   gap: 0.25rem;
   flex-wrap: wrap;
+  margin-top: 0.75rem;
+  margin-bottom: -0.25rem;
+}
+
+.mobile-controls-row.mobile-draw-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
   margin-top: 1.5rem;
+  margin-bottom: 0;
+}
+
+.mobile-controls-row.mobile-draw-controls .mobile-icons-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
 }
 
 
@@ -344,11 +362,10 @@ body {
 }
 
 .mobile-card-area {
-  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 0;
+  padding: 2.5rem 0px 10px;
   min-height: 0;
   max-height: 50vh;
 }
@@ -601,8 +618,8 @@ body {
 
 .mobile-status {
   text-align: center;
-  min-height: 1.2rem;
-  margin: -3rem 0;
+  min-height: 0.5rem;
+  margin: 0;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -615,8 +632,13 @@ body {
   color: var(--danger);
 }
 
-.mobile-status.checking {
-  color: var(--muted);
+#mobileStatusMessage {
+  position: absolute;
+  bottom: 340px;
+  left: 1rem;
+  right: 1rem;
+  text-align: center;
+  z-index: 10;
 }
 
 .mobile-keyboard-wrapper {
