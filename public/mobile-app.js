@@ -1,7 +1,7 @@
 const MobileSpell = (() => {
   const qwertyRows = MobileCommon.qwertyRows;
   const fidelByKey = MobileCommon.fidelByKey;
-  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, fetchLongestWord, playWordAudio } = MobileCommon;
+  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, playWordAudio } = MobileCommon;
 
   const consonantGrid = document.getElementById('mobileConsonantGrid');
   const vowelRow = document.getElementById('mobileVowelRow');
@@ -22,7 +22,7 @@ const MobileSpell = (() => {
   let currentWord = null;
   let answer = [];
   let cursorPosition = 0;
-  let firstLoad = true;
+  let wordLoadIndex = 0;
   let currentAudio = null;
   let activeConsonantBtn = null;
   let showingFidel = false;
@@ -66,7 +66,8 @@ const MobileSpell = (() => {
     if (slotsArea) {
       slotsArea.classList.toggle("single-row", rowCount === 1);
       slotsArea.classList.toggle("two-rows", rowCount === 2);
-      slotsArea.classList.toggle("multi-row", rowCount >= 3);
+      slotsArea.classList.toggle("three-rows", rowCount === 3);
+      slotsArea.classList.toggle("four-rows", rowCount === 4);
       if (mobileContent) {
         mobileContent.classList.toggle("word-lower", rowCount === 1 || rowCount === 2);
       }
@@ -275,16 +276,27 @@ const MobileSpell = (() => {
     clearRevealClasses();
     try {
       let word;
-      if (firstLoad) {
-        try {
-          word = await fetchLongestWord();
-        } catch (_longestError) {
+      if (wordLoadIndex < 4) {
+        const minLen = wordLoadIndex * 5 + 1;
+        const maxLen = (wordLoadIndex + 1) * 5;
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+          try {
+            word = await fetchRandomWord(minLen, maxLen);
+          } catch (_fetchError) {
+            word = null;
+          }
+          if (word && word.amharic && word.amharic.length >= minLen && word.amharic.length <= maxLen) {
+            break;
+          }
+          word = null;
+        }
+        if (!word) {
           word = await fetchRandomWord();
         }
       } else {
         word = await fetchRandomWord();
       }
-      firstLoad = false;
+      wordLoadIndex += 1;
       currentWord = word;
       answer = [];
       cursorPosition = 0;

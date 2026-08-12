@@ -576,33 +576,42 @@ app.get('/api/alphabet', (_req, res) => {
   );
 });
 
-app.get('/api/words/random', wordsRateLimiter, (_req, res) => {
+app.get('/api/words/random', wordsRateLimiter, (req, res) => {
   const useSpecialFilter = specialWordRequestCount < specialWordChars.length;
   const targetChar = specialWordChars[specialWordRequestCount] || null;
   specialWordRequestCount += 1;
 
-  const query = useSpecialFilter && targetChar
-    ? `SELECT
-       id,
-       latin,
-       amharic,
-       translation,
-       CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
-     FROM words
-     WHERE amharic LIKE '%${targetChar}%'
-     ORDER BY RANDOM()
-     LIMIT 1`
-    : `SELECT
-       id,
-       latin,
-       amharic,
-       translation,
-       CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
-     FROM words
-     ORDER BY RANDOM()
-     LIMIT 1`;
+  const minLength = Number(req.query.minLength) || null;
+  const maxLength = Number(req.query.maxLength) || null;
 
-  db.get(query, (err, row) => {
+  const whereClauses = [];
+  const params = [];
+  if (targetChar) {
+    whereClauses.push('amharic LIKE ?');
+    params.push(`%${targetChar}%`);
+  }
+  if (minLength) {
+    whereClauses.push('LENGTH(amharic) >= ?');
+    params.push(minLength);
+  }
+  if (maxLength) {
+    whereClauses.push('LENGTH(amharic) <= ?');
+    params.push(maxLength);
+  }
+
+  const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const query = `SELECT
+    id,
+    latin,
+    amharic,
+    translation,
+    CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
+  FROM words
+  ${where}
+  ORDER BY RANDOM()
+  LIMIT 1`;
+
+  db.get(query, params, (err, row) => {
     if (err) {
       return res.status(500).json({ error: 'Unable to load word.' });
     }

@@ -83,8 +83,13 @@ const MobileCommon = (() => {
     return response.json();
   }
 
-  async function fetchRandomWord() {
-    const response = await fetch(FidelBase.url('/api/words/random'));
+  async function fetchRandomWord(minLength, maxLength) {
+    const params = new URLSearchParams();
+    if (minLength) params.set('minLength', minLength);
+    if (maxLength) params.set('maxLength', maxLength);
+    const query = params.toString();
+    const url = '/api/words/random' + (query ? `?${query}` : '');
+    const response = await fetch(FidelBase.url(url));
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       throw new Error(data?.error || 'Failed to load word.');

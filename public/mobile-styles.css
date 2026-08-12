@@ -595,15 +595,19 @@ body {
 }
 
 .mobile-slots-area.single-row {
-  transform: translateY(-6rem);
-}
-
-.mobile-slots-area.two-rows {
   transform: translateY(-4rem);
 }
 
-.mobile-slots-area.multi-row {
-  transform: translateY(-6rem);
+.mobile-slots-area.two-rows {
+  transform: translateY(-3rem);
+}
+
+.mobile-slots-area.three-rows {
+  transform: translateY(-2.75rem);
+}
+
+.mobile-slots-area.four-rows {
+  transform: translateY(-2rem);
 }
 
 .mobile-word-meta {

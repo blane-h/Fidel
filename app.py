@@ -531,37 +531,36 @@ def api_words_random():
     if use_special_filter:
         special_word_request_count += 1
 
+    min_length = request.args.get('minLength', type=int)
+    max_length = request.args.get('maxLength', type=int)
+
+    where_clauses = []
+    params = []
+    if target_char:
+        where_clauses.append('amharic LIKE ?')
+        params.append(f'%{target_char}%')
+    if min_length:
+        where_clauses.append('LENGTH(amharic) >= ?')
+        params.append(min_length)
+    if max_length:
+        where_clauses.append('LENGTH(amharic) <= ?')
+        params.append(max_length)
+
+    where = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
+    query = f"""
+        SELECT id, latin, amharic, translation,
+               CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
+        FROM words
+        {where}
+        ORDER BY RANDOM()
+        LIMIT 1
+    """
+
     conn = get_db_connection()
     try:
-        if use_special_filter and target_char:
-            query = """
-                SELECT id, latin, amharic, translation,
-                       CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
-                FROM words
-                WHERE amharic LIKE ?
-                ORDER BY RANDOM()
-                LIMIT 1
-            """
-            row = conn.execute(query, (f'%{target_char}%',)).fetchone()
-        else:
-            query = """
-                SELECT id, latin, amharic, translation,
-                       CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
-                FROM words
-                ORDER BY RANDOM()
-                LIMIT 1
-            """
-            row = conn.execute(query).fetchone()
-
+        row = conn.execute(query, params).fetchone()
         if not row:
-            fallback = {
-                'id': 0,
-                'latin': 'house',
-                'amharic': 'ቤት',
-                'translation': 'house',
-                'hasAudio': 0
-            }
-            return jsonify(fallback)
+            return jsonify({'error': 'No words found.'}), 404
         return jsonify(dict(row))
     finally:
         conn.close()
