@@ -200,6 +200,10 @@ body {
   position: relative;
 }
 
+.mobile-page.mobile-draw-page {
+  padding-top: 2rem;
+}
+
 .mobile-content {
   flex: 1;
   display: flex;
@@ -365,7 +369,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 0px 10px;
+  padding: 2rem 0px 10px;
   min-height: 0;
   max-height: 50vh;
 }
@@ -455,7 +459,7 @@ body {
   display: flex;
   justify-content: center;
   gap: 1rem;
-  padding-top: 0.75rem;
+  padding-top: 1.75rem;
   flex-wrap: wrap;
 }
 
