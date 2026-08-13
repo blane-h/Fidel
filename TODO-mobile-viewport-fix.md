@@ -13,6 +13,8 @@ On Safari (iOS), the dynamic browser toolbar and bottom tab bar change the avail
 | 4 | `mobile-styles.css:672` | `#mobileStatusMessage` uses hardcoded `bottom: 340px` | Status message position is wrong on any screen size other than the one it was designed for |
 | 5 | `mobile-styles.css:681` | `.mobile-keyboard-wrapper` uses `bottom: 110px` | No safe-area or dynamic toolbar compensation |
 | 6 | `mobile-styles.css:386` | `.mobile-card-area` uses `max-height: 50vh` | Uses static `vh` instead of `dvh`; doesn't adapt to Safari's dynamic viewport |
+| 7 | `mobile-styles.css:366-376` | `.mobile-prompt` has no `min-height` or `line-height` | Placeholder "fidel" (1 line) shifts downward when API word loads and wraps to 2+ lines at `font-size: 40px` |
+| 8 | `mobile-styles.css:380-385` | `.mobile-prompt.hint` shares base `.mobile-prompt` styles | If `min-height` added to `.mobile-prompt`, hint text (0.8rem font) needs override |
 
 ## Fix Plan
 
@@ -50,13 +52,28 @@ On Safari (iOS), the dynamic browser toolbar and bottom tab bar change the avail
 }
 ```
 
-**2d.** Fix `#mobileStatusMessage` — replace hardcoded `bottom: 340px` with a relative value that uses `dvh`:
+**2d.** Fix `#mobileStatusMessage` — replace hardcoded `bottom: 340px` with natural flow positioning:
 ```css
 #mobileStatusMessage {
-  bottom: calc(100dvh - 340px);  /* position relative to viewport height */
+  position: relative;
+  /* bottom: 340px removed; flows naturally within .mobile-slots-area flex column */
 }
 ```
-Or better: use `top`-based positioning relative to the keyboard area instead of fixed bottom offset.
+
+### Phase 2.5: Layout Shift Prevention (Content Reflow)
+
+**2e.** Fix `.mobile-prompt` — reserve `min-height` so the placeholder "fidel" (1 line at 40px) doesn't shift downward when the API word loads and wraps to 2+ lines:
+```css
+.mobile-prompt {
+  line-height: 1.2;
+  min-height: 6rem;       /* 2 lines at 40px * 1.2 = 96px ≈ 6rem */
+}
+
+.mobile-prompt.hint {
+  min-height: auto;       /* override for small hint text */
+  line-height: normal;
+}
+```
 
 ### Phase 3: Dynamic Viewport JS Fallback
 
@@ -82,11 +99,16 @@ Then use `height: calc(var(--vh, 1vh) * 100)` as an additional fallback.
 | iPhone 14 Pro (393×852) | Bars collapsed + notched safe area | No overlap with notch or home indicator |
 | iPhone 15 Pro Max (430×932) | Bars visible/collapsed | Layout scales proportionally |
 | On-screen keyboard visible | Keyboard pushes content | Keyboard wrapper and status message stay above keyboard |
+| Spell page load | Placeholder "fidel" → API word | No vertical shift; prompt stays in same position |
+| Spell page: prompt toggle | Latin → Fidel, Fidel → Latin | No additional shift (min-height already reserved) |
 
 ## Implementation Order
 1. Add `viewport-fit=cover` to HTML files
-2. Fix `100vh`/`100dvh` ordering and fallbacks in CSS
+2. Fix `100vh`/`100dvh` ordering and fallbacks in CSS (body + .mobile-page)
 3. Fix `50vh` → `50dvh` on card-area
-4. Fix fixed positioning with safe-area insets and `dvh`
-5. Add JS viewport-height tracking
-6. Verify CSS syntax
+4. Fix fixed positioning with safe-area insets (bottom tab bar, keyboard wrapper)
+5. Fix `#mobileStatusMessage` hardcoded `bottom: 340px` — use natural flow
+6. Fix layout shift: add `min-height` + `line-height` to `.mobile-prompt`
+7. Add JS viewport-height tracking (`--vh` variable)
+8. Bump cache-busting version on mobile-spell.html CSS link
+9. Verify CSS syntax and JS syntax

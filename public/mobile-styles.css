@@ -366,9 +366,11 @@ body {
 .mobile-prompt {
   font-size: 40px;
   font-weight: 500;
+  line-height: 1.2;
   text-align: center;
   margin: 0;
   min-width: 60px;
+  min-height: 6rem;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -380,6 +382,8 @@ body {
   color: var(--muted);
   font-weight: 600;
   text-transform: none;
+  min-height: auto;
+  line-height: normal;
 }
 
 .mobile-card-area {
