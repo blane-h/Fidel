@@ -208,6 +208,10 @@ body {
   padding-top: 2rem;
 }
 
+.mobile-page.mobile-study-page {
+  padding-top: 1rem;
+}
+
 .mobile-spell-page .mobile-word-meta {
   margin-top: -1rem;
 }
@@ -299,7 +303,7 @@ body {
   justify-content: center;
   gap: 0.25rem;
   flex-wrap: wrap;
-  margin-top: 0.75rem;
+  margin-top: 1.75rem;
   margin-bottom: -0.25rem;
 }
 
@@ -377,7 +381,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 0px 10px;
+  padding: 3rem 0px 30px;
   min-height: 0;
   max-height: 50vh;
 }
