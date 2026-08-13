@@ -532,6 +532,22 @@ app.get('/', (req, res) => {
   return res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/1', (req, res) => {
+  return res.sendFile(path.join(__dirname, 'public', 'mobile-spell.html'));
+});
+
+app.get('/2', (req, res) => {
+  return res.sendFile(path.join(__dirname, 'public', 'mobile-spell.html'));
+});
+
+app.get('/3', (req, res) => {
+  return res.sendFile(path.join(__dirname, 'public', 'mobile-spell.html'));
+});
+
+app.get('/4', (req, res) => {
+  return res.sendFile(path.join(__dirname, 'public', 'mobile-spell.html'));
+});
+
 app.get('/study', (req, res) => {
   if (req.isMobile) return res.sendFile(path.join(__dirname, 'public', 'mobile-study.html'));
   return res.sendFile(path.join(__dirname, 'public', 'study.html'));
@@ -600,6 +616,45 @@ app.get('/api/words/random', wordsRateLimiter, (req, res) => {
   }
 
   const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const query = `SELECT
+    id,
+    latin,
+    amharic,
+    translation,
+    CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
+  FROM words
+  ${where}
+  ORDER BY RANDOM()
+  LIMIT 1`;
+
+  db.get(query, params, (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: 'Unable to load word.' });
+    }
+
+    if (!row) {
+      return res.status(404).json({ error: 'No words found.' });
+    }
+
+    return res.json(row);
+  });
+});
+
+app.get('/api/words/random/length/:length', wordsRateLimiter, (req, res) => {
+  const useSpecialFilter = specialWordRequestCount < specialWordChars.length;
+  const targetChar = specialWordChars[specialWordRequestCount] || null;
+  specialWordRequestCount += 1;
+
+  const length = Number(req.params.length);
+
+  const whereClauses = ['LENGTH(amharic) >= ?', 'LENGTH(amharic) <= ?'];
+  const params = [length - 1, length + 1];
+  if (targetChar) {
+    whereClauses.push('amharic LIKE ?');
+    params.push(`%${targetChar}%`);
+  }
+
+  const where = `WHERE ${whereClauses.join(' AND ')}`;
   const query = `SELECT
     id,
     latin,

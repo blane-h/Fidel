@@ -29,7 +29,9 @@
         // Only trust script-derived base when it is a real subpath.
         // A root-relative "/base.js" yields an empty base here, so we fall
         // back to location.pathname instead.
-        if (base && base !== '/') {
+        // Also ignore numeric routes like /1/, /2/, /3/, /4/ which are
+        // app pages, not deployment subpaths.
+        if (base && base !== '/' && !/^\/[1-4]\/$/.test(base)) {
           return base;
         }
       }
@@ -38,7 +40,15 @@
     // Fallback: use the current page path up to the last slash.
     const path = global.location.pathname;
     const lastSlash = path.lastIndexOf('/');
-    return lastSlash === -1 ? '/' : path.slice(0, lastSlash + 1);
+    let base = lastSlash === -1 ? '/' : path.slice(0, lastSlash + 1);
+
+    // Treat simple numeric routes like /1, /2, /3, /4 as root-level pages,
+    // not as deployment subpaths.
+    if (/^\/[1-4]$/.test(path)) {
+      base = '/';
+    }
+
+    return base;
   }
 
   const BASE = detectBasePath();

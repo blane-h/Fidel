@@ -97,6 +97,16 @@ const MobileCommon = (() => {
     return response.json();
   }
 
+  async function fetchRandomWordExactLength(length) {
+    const url = `/api/words/random/length/${length}`;
+    const response = await fetch(FidelBase.url(url));
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data?.error || 'Failed to load word.');
+    }
+    return response.json();
+  }
+
   async function fetchLongestWord() {
     const response = await fetch(FidelBase.url('/api/words/longest'));
     if (!response.ok) {

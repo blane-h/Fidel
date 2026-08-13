@@ -1,7 +1,7 @@
 const MobileSpell = (() => {
   const qwertyRows = MobileCommon.qwertyRows;
   const fidelByKey = MobileCommon.fidelByKey;
-  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, playWordAudio } = MobileCommon;
+  const { normalizeAmharicChar, getAlternateFidelForms, fetchAlphabet, fetchRandomWord, fetchRandomWordExactLength, playWordAudio } = MobileCommon;
 
   const consonantGrid = document.getElementById('mobileConsonantGrid');
   const vowelRow = document.getElementById('mobileVowelRow');
@@ -29,6 +29,10 @@ const MobileSpell = (() => {
   let revealMode = false;
   let translationVisible = false;
   let autoAdvanceTimeout = null;
+  const urlRowCount = (() => {
+    const match = window.location.pathname.match(/^\/([1-4])$/);
+    return match ? parseInt(match[1], 10) : null;
+  })();
 
   function renderAnswer() {
     answerRows.innerHTML = '';
@@ -42,7 +46,7 @@ const MobileSpell = (() => {
       return;
     }
 
-    const slotsPerRow = 5;
+    const slotsPerRow = 7;
     const rowCount = Math.ceil(length / slotsPerRow);
     for (let r = 0; r < rowCount; r += 1) {
       const row = document.createElement('div');
@@ -64,12 +68,16 @@ const MobileSpell = (() => {
     }
     updateAnswerDisplay();
     if (slotsArea) {
-      slotsArea.classList.toggle("single-row", rowCount === 1);
+      slotsArea.classList.toggle("one-row", rowCount === 1);
       slotsArea.classList.toggle("two-rows", rowCount === 2);
       slotsArea.classList.toggle("three-rows", rowCount === 3);
       slotsArea.classList.toggle("four-rows", rowCount === 4);
       if (mobileContent) {
         mobileContent.classList.toggle("word-lower", rowCount === 1 || rowCount === 2);
+        mobileContent.classList.toggle("one-row", rowCount === 1);
+        mobileContent.classList.toggle("two-rows", rowCount === 2);
+        mobileContent.classList.toggle("three-rows", rowCount === 3);
+        mobileContent.classList.toggle("four-rows", rowCount === 4);
       }
     }
   }
@@ -276,25 +284,54 @@ const MobileSpell = (() => {
     clearRevealClasses();
     try {
       let word;
-      if (wordLoadIndex < 4) {
-        const minLen = wordLoadIndex * 5 + 1;
-        const maxLen = (wordLoadIndex + 1) * 5;
-        for (let attempt = 0; attempt < 10; attempt += 1) {
+      let targetLength = null;
+      let minLen = 1;
+      let maxLen = 5;
+
+      if (urlRowCount !== null && wordLoadIndex === 0) {
+        const targetLengths = [3, 8, 13, 18];
+        targetLength = targetLengths[urlRowCount - 1];
+        minLen = urlRowCount * 5 - 4;
+        maxLen = urlRowCount * 5;
+      } else if (wordLoadIndex < 4) {
+        const targetLengths = [3, 8, 13, 18];
+        targetLength = targetLengths[wordLoadIndex];
+        minLen = wordLoadIndex * 5 + 1;
+        maxLen = (wordLoadIndex + 1) * 5;
+      }
+
+      if (targetLength !== null) {
+        try {
+          word = await fetchRandomWordExactLength(targetLength);
+        } catch (_fetchError) {
+          word = null;
+        }
+        if (!word || !word.amharic || word.amharic.length !== targetLength) {
           try {
             word = await fetchRandomWord(minLen, maxLen);
           } catch (_fetchError) {
             word = null;
           }
-          if (word && word.amharic && word.amharic.length >= minLen && word.amharic.length <= maxLen) {
-            break;
-          }
-          word = null;
         }
         if (!word) {
-          word = await fetchRandomWord();
+          try {
+            word = await fetchRandomWord();
+          } catch (_fetchError) {
+            word = null;
+          }
         }
       } else {
         word = await fetchRandomWord();
+      }
+
+      if (!word) {
+        statusMessage.textContent = 'Unable to load word. Please try again.';
+        statusMessage.className = 'mobile-status error';
+        return;
+      }
+
+      if (urlRowCount !== null && wordLoadIndex === 0) {
+        urlRowCount = null;
       }
       wordLoadIndex += 1;
       currentWord = word;

@@ -482,6 +482,16 @@ def index():
     return send_from_directory('public', 'index.html')
 
 
+@app.route('/1')
+@app.route('/2')
+@app.route('/3')
+@app.route('/4')
+def fixed_row_page():
+    if is_mobile_user_agent(request.headers.get('User-Agent', '')):
+        return send_from_directory('public', 'mobile-spell.html')
+    return send_from_directory('public', 'index.html')
+
+
 @app.route('/study')
 def study_page():
     if is_mobile_user_agent(request.headers.get('User-Agent', '')):
@@ -547,6 +557,43 @@ def api_words_random():
         params.append(max_length)
 
     where = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ''
+    query = f"""
+        SELECT id, latin, amharic, translation,
+               CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
+        FROM words
+        {where}
+        ORDER BY RANDOM()
+        LIMIT 1
+    """
+
+    conn = get_db_connection()
+    try:
+        row = conn.execute(query, params).fetchone()
+        if not row:
+            return jsonify({'error': 'No words found.'}), 404
+        return jsonify(dict(row))
+    finally:
+        conn.close()
+
+
+@app.route('/api/words/random/length/<int:length>')
+def api_words_random_length(length):
+    global special_word_request_count
+    if not words_rate_limiter():
+        return jsonify({'error': 'Too many requests. Please try again shortly.'}), 429
+
+    use_special_filter = special_word_request_count < len(special_word_chars)
+    target_char = special_word_chars[special_word_request_count] if use_special_filter else None
+    if use_special_filter:
+        special_word_request_count += 1
+
+    where_clauses = ['LENGTH(amharic) >= ?', 'LENGTH(amharic) <= ?']
+    params = [length - 1, length + 1]
+    if target_char:
+        where_clauses.append('amharic LIKE ?')
+        params.append(f'%{target_char}%')
+
+    where = f"WHERE {' AND '.join(where_clauses)}"
     query = f"""
         SELECT id, latin, amharic, translation,
                CASE WHEN pronunciation_audio IS NOT NULL THEN 1 ELSE 0 END AS hasAudio
