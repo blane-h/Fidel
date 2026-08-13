@@ -67,19 +67,6 @@ const MobileSpell = (() => {
       answerRows.appendChild(row);
     }
     updateAnswerDisplay();
-    if (slotsArea) {
-      slotsArea.classList.toggle("one-row", rowCount === 1);
-      slotsArea.classList.toggle("two-rows", rowCount === 2);
-      slotsArea.classList.toggle("three-rows", rowCount === 3);
-      slotsArea.classList.toggle("four-rows", rowCount === 4);
-      if (mobileContent) {
-        mobileContent.classList.toggle("word-lower", rowCount === 1 || rowCount === 2);
-        mobileContent.classList.toggle("one-row", rowCount === 1);
-        mobileContent.classList.toggle("two-rows", rowCount === 2);
-        mobileContent.classList.toggle("three-rows", rowCount === 3);
-        mobileContent.classList.toggle("four-rows", rowCount === 4);
-      }
-    }
   }
 
   function updateAnswerDisplay() {

@@ -619,47 +619,7 @@ body {
   margin-top: 0.25rem;
 }
 
-.mobile-slots-area.one-row {
-  transform: translateY(-2rem);
-}
 
-.mobile-slots-area.two-rows {
-  transform: translateY(-1.95rem);
-}
-
-.mobile-slots-area.three-rows {
-  transform: translateY(-2.5rem);
-}
-
-.mobile-slots-area.four-rows {
-  transform: translateY(-2rem);
-}
-
-.mobile-word-meta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mobile-content.word-lower .mobile-word-meta {
-  margin-top: 6rem;
-}
-
-.mobile-content.one-row .mobile-word-meta {
-  margin-top: 7rem;
-}
-
-.mobile-content.two-rows .mobile-word-meta {
-  margin-top: 5.5rem;
-}
-
-.mobile-content.three-rows .mobile-word-meta {
-  margin-top: -0.25rem;
-}
-
-.mobile-content.four-rows .mobile-word-meta {
-  margin-top: 0.25rem;
-}
 
 .mobile-status {
   text-align: center;
