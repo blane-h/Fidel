@@ -70,4 +70,13 @@
     url,
     fileUrl
   };
+
+  function setViewportProperty() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  }
+
+  setViewportProperty();
+  window.addEventListener('resize', setViewportProperty);
+  window.addEventListener('orientationchange', setViewportProperty);
 })(typeof window !== 'undefined' ? window : globalThis);
